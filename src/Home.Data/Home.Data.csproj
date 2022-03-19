@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="SQL\ForeignTales.sql" />
+    <None Remove="SQL\Indexes.sql" />
+    <None Remove="SQL\Priveleges.sql" />
+    <None Remove="SQL\StoredFunctions.sql" />
+    <None Remove="SQL\Views.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="SQL\ForeignTales.sql" />
+    <EmbeddedResource Include="SQL\Indexes.sql" />
+    <EmbeddedResource Include="SQL\Priveleges.sql" />
+    <EmbeddedResource Include="SQL\StoredFunctions.sql" />
+    <EmbeddedResource Include="SQL\Views.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Zs.Bot.Data.PostgreSQL" Version="6.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+</Project>

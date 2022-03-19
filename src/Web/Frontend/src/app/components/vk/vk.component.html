@@ -1,0 +1,150 @@
+<!-- Верхняя панель -->
+<div class="d-flex align-items-center flex-shrink-0 px-1 py-2 link-dark text-decoration-none">
+    
+    <div class="p-field p-md-1 w160">
+        <span class="p-float-label">
+            <p-calendar inputId="dtFromDate" name="dtFromDate" [(ngModel)]="filter.fromDate" [showTime]="true" dateFormat="dd.mm.yy" hourFormat="24" (input)="inputChanged()"></p-calendar>
+            <label for="dtFromDate">Дата начала</label>
+        </span>
+    </div>
+    
+    <button pButton type="button" class="p-button-outlined btnShiftDay" (click)="shiftFilterDates(-1)"><i class="pi pi-chevron-left"></i></button>
+    <button pButton type="button" class="p-button-outlined btnShiftDay" (click)="shiftFilterDates(1)"><i class="pi pi-chevron-right"></i></button>
+
+    <div class="p-field p-md-1 w160">
+        <span class="p-float-label">
+            <p-calendar inputId="dtToDate" name="dtToDate" [(ngModel)]="filter.toDate" [showTime]="true" dateFormat="dd.mm.yy" hourFormat="24" (input)="inputChanged()"></p-calendar>
+            <label for="dtToDate">Дата окончания</label>
+        </span>
+    </div>
+</div>
+
+<div class="d-flex justify-content-lg-start">
+    
+    <!-- Левая панель -->
+    <div class="d-flex flex-column align-items-stretch flex-shrink-0 bg-white w400 card m-1">
+        <div class="d-flex align-items-baseline px-2">
+
+            <!-- Поиск -->
+            <div class="p-field p-md-2 w350 mx-1" id="filterControl">
+                <div class="p-inputgroup">
+                    <span class="p-inputgroup-addon">
+                        <i class="pi pi-search"></i>
+                    </span>
+                    <span class="p-float-label">
+                        <input type="text" id="tbFilter" pInputText [(ngModel)]="filter.filterText" (input)="inputChanged()"> 
+                        <label for="tbFilter">Поиск</label>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Сортировка -->
+            <div class="nav-item dropdown bg-light">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" target="_self" role="button" aria-expanded="false">                
+                    <i class="pi pi-sort-alpha-down"></i>
+                </a>
+                <ul class="dropdown-menu bg-light">
+                  <li><a class="dropdown-item" href="#scrollspyHeading3">Сортировать по имени</a></li>
+                  <li><a class="dropdown-item" href="#scrollspyHeading4">Сортировать по активности</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Список пользователей -->
+        <div>
+            <!-- <div class="progress-spinner" *ngIf="true">
+                <p-progressSpinner></p-progressSpinner>
+            </div> -->
+            <p-orderList [value]="users!">
+                <ng-template let-user pTemplate="item">
+                    <div class="d-flex justify-content-between align-items-start" (click)="selectListUser(user.id)">
+                        {{user.name}}
+                        <div>
+                            <input [(ngModel)]="user.id" hidden />
+                            <span *ngIf="user.activitySec" class="badge alert-warning time-info">{{secondsToHMString(user.activitySec)}}</span>
+                            <span *ngIf="user.isOnline" class="alert-primary rounded-pill px-2">Online</span>
+                            <span *ngIf="!user.isOnline" class="alert-secondary rounded-pill px-2">Offline</span>
+                        </div>
+                    </div>
+                </ng-template>
+            </p-orderList>
+            <p-paginator [rows]="10" [totalRecords]="100" [pageLinkSize]=3 (onPageChange)="paginate($event)"></p-paginator>
+        </div>        
+    </div>
+
+    <!-- Правая (центральная) панель -->
+    <div>
+        <p-panel header="За период" *ngIf="periodInfo != null" class="m-1">
+            <table>
+                <tbody>
+                    <tr>
+                        <th class="p-2">Имя пользователя</th>
+                        <td class="p-2">
+                            <a href="{{'https://vk.com/id' + periodInfo.userId}}" target="_blank">{{periodInfo.userName}}</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Количество посещений</th>
+                        <td class="p-2">{{periodInfo.visitsCount}}</td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Время в приложении</th>
+                        <td class="p-2">{{periodInfo.timeInApp}}</td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Время на сайте</th>
+                        <td class="p-2">{{periodInfo.timeInSite}}</td>
+                    </tr>
+                    <tr >
+                        <th class="p-2">Полное время</th>
+                        <td class="p-2">{{periodInfo.fullTime}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </p-panel>
+        <p-panel *ngIf="fullTimeInfo != null" class="m-1">
+            <ng-template pTemplate="header">
+                <span class="p-panel-title ng-tns-c76-2 ng-star-inserted" id="p-panel-0_header">За всё время ({{fullTimeInfo.analyzedDaysCount}} дней)</span>
+            </ng-template>
+            <table>
+                <tbody>
+                    <tr>
+                        <th class="p-2">Активных дней</th>
+                        <td class="p-2">{{fullTimeInfo.activityDaysCount}}</td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Заходы через сайт</th>
+                        <td class="p-2">{{fullTimeInfo.visitsFromSite}}</td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Заходы через приложение</th>
+                        <td class="p-2">{{fullTimeInfo.visitsFromApp}}</td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Общее количество посещений</th>
+                        <td class="p-2">{{fullTimeInfo.visitsCount}}</td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Время в приложении</th>
+                        <td class="p-2">{{fullTimeInfo.timeInApp}}</td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Время на сайте</th>
+                        <td class="p-2">{{fullTimeInfo.timeInSite}}</td>
+                    </tr>
+                    <tr >
+                        <th class="p-2">Полное время</th>
+                        <td class="p-2">{{fullTimeInfo.fullTime}}</td>
+                    </tr>
+                    <tr>
+                        <th class="p-2">Среднее время за день</th>
+                        <td class="p-2">{{fullTimeInfo.avgDailyTime}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </p-panel>
+    </div>
+</div>
+
+
+

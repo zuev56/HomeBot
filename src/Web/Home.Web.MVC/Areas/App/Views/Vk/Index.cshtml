@@ -1,0 +1,29 @@
+﻿@model Home.Web.Areas.App.Models.Vk.VkVM
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Vk User Activity";
+}
+<link rel="stylesheet" href="~/css/App/Vk.css" />
+
+
+<div style="align-items:center; width:100%;">
+    
+    <div style="width:100%;">
+        @Html.Hidden("UserId")
+        <div id="LeftPanel" class="left-panel">
+            @await Html.PartialAsync("_Filters", Model)
+        </div>
+
+        <div id="ContentPanel" class="right-panel">
+            <div id="UserList" class="left-panel-content"></div>
+            <div id="UserInfo" class="right-panel-content"></div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts
+{
+    <script src="~/js/app/vk.js"></script>
+}
