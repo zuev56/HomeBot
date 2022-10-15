@@ -1,13 +1,8 @@
 ﻿using Home.Bot.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text.Json.Nodes;
-using System.Threading;
-using System.Threading.Tasks;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
@@ -62,7 +57,7 @@ namespace Home.Bot.Services
                 period: TimeSpan.FromMinutes(5),
                 method: CombineHardwareAnalyzeResults,
                 startUtcDate: DateTime.UtcNow + TimeSpan.FromSeconds(5),
-                description: Constants.HARDWARE_MONITOR_INFORMING_JOB_NAME
+                description: Constants.HardwareWarningsInformer
             );
            
             return new List<IJobBase>() { hardwareMonitorJob };
@@ -123,8 +118,8 @@ namespace Home.Bot.Services
                     })
                     .ToArray();
 
-            int total = memUsage.Single(i => i.Name == Constants.MEM_INFO_TOTAL).Size;
-            int availavle = memUsage.Single(i => i.Name == Constants.MEM_INFO_AVAILABLE).Size;
+            int total = memUsage.Single(i => i.Name == Constants.MemTotal).Size;
+            int availavle = memUsage.Single(i => i.Name == Constants.MemAvailable).Size;
 
             return 100 - availavle / (double)total * 100;
         }
