@@ -1,16 +1,7 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using Home.Bot.Abstractions;
 using Home.Bot.Services;
 using Home.Data;
-using Home.Data.Abstractions;
-using Home.Data.Repositories;
-using Home.Services.Vk;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,7 +29,7 @@ using Zs.Common.Services.Shell;
 
 namespace Home.Bot
 {
-    class Program
+    public class Program
     {
         public static async Task Main(string[] args)
         {
@@ -49,7 +40,7 @@ namespace Home.Bot
                     .CreateLogger();
 
                 Log.Warning("-! Starting {ProcessName} (MachineName: {MachineName}, OS: {OS}, User: {User}, ProcessId: {ProcessId})",
-                    Process.GetCurrentProcess().MainModule.ModuleName,
+                    Process.GetCurrentProcess().MainModule!.ModuleName,
                     Environment.MachineName,
                     Environment.OSVersion,
                     Environment.UserName,
@@ -84,12 +75,12 @@ namespace Home.Bot
             if (configuration["SecretsPath"] != null)
                 configuration.AddJsonFile(configuration["SecretsPath"]);
 
-            AssertConfigurationIsCorrect(configuration);
+            EnsureConfigurationIsCorrect(configuration);
 
             return configuration;
         }
 
-        private static void AssertConfigurationIsCorrect(IConfiguration configuration)
+        private static void EnsureConfigurationIsCorrect(IConfiguration configuration)
         {
             // TODO
             // BotToken
@@ -105,12 +96,11 @@ namespace Home.Bot
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddDbContext<HomeContext>(options =>
-                        options.UseNpgsql(hostContext.Configuration.GetSecretValue("ConnectionStrings:Default")));
+                        options.UseNpgsql(hostContext.Configuration["ConnectionStrings:Default"]));
 
                     services.AddDbContext<PostgreSqlBotContext>(options =>
-                        options.UseNpgsql(hostContext.Configuration.GetSecretValue("ConnectionStrings:Default")));
-                    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-
+                        options.UseNpgsql(hostContext.Configuration["ConnectionStrings:Default"]));
+                    
                     // For repositories
                     services.AddScoped<IDbContextFactory<HomeContext>, HomeContextFactory>();
                     services.AddScoped<IDbContextFactory<PostgreSqlBotContext>, PostgreSqlBotContextFactory>();
@@ -140,8 +130,6 @@ namespace Home.Bot
 
                     services.AddScoped<IMessenger, TelegramMessenger>();
 
-                    services.AddScoped<IActivityLogItemsRepository, ActivityLogItemsRepository<HomeContext>>();
-                    services.AddScoped<IVkUsersRepository, VkUsersRepository<HomeContext>>();
                     services.AddScoped<ICommandsRepository, CommandsRepository<PostgreSqlBotContext>>();
                     services.AddScoped<IUserRolesRepository, UserRolesRepository<PostgreSqlBotContext>>();
                     services.AddScoped<IChatsRepository, ChatsRepository<PostgreSqlBotContext>>();
@@ -149,7 +137,6 @@ namespace Home.Bot
                     services.AddScoped<IMessagesRepository, MessagesRepository<PostgreSqlBotContext>>();
 
                     services.AddScoped<IScheduler, Scheduler>();
-                    services.AddScoped<IActivityLoggerService, ActivityLoggerService>();
                     services.AddScoped<IMessageDataSaver, MessageDataDBSaver>();
                     services.AddScoped<IDbClient, DbClient>(sp =>
                         new DbClient(

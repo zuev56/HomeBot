@@ -1,14 +1,11 @@
 ﻿using Home.Bot.Abstractions;
+using Home.Data;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Enums;
 using Zs.Bot.Services.Messaging;
@@ -24,15 +21,13 @@ namespace Home.Bot
     {
         private readonly IHardwareMonitor _hardwareMonitor;
         private readonly IUserWatcher _userWatcher;
-
         private readonly IConfiguration _configuration;
         private readonly IMessenger _messenger;
         private readonly IScheduler _scheduler;
         private readonly IMessagesRepository _messagesRepo;
-        private readonly ISeqService _seqService;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ISeqService? _seqService;
         private readonly ILogger<HomeBot> _logger;
-        //private readonly IConnectionAnalyser _connectionAnalyser;
-
 
         public HomeBot(
             IConfiguration configuration,
@@ -41,37 +36,30 @@ namespace Home.Bot
             IMessagesRepository messagesRepo,
             IHardwareMonitor hardwareMonitor,
             IUserWatcher userWatcher,
-            ISeqService seqService = null,
-            ILogger<HomeBot> logger = null)
+            IServiceProvider serviceProvider,
+            ILogger<HomeBot> logger,
+            ISeqService? seqService = null)
         {
-            try
-            {
-                _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-                _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
-                _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
-                _messagesRepo = messagesRepo ?? throw new ArgumentNullException(nameof(messagesRepo));
+            _configuration = configuration;
+            _messenger = messenger;
+            _scheduler = scheduler;
+            _messagesRepo = messagesRepo;
+            _hardwareMonitor = hardwareMonitor;
+            _userWatcher = userWatcher;
+            _serviceProvider = serviceProvider;
+            _logger = logger;
+            _seqService = seqService;
 
-                _hardwareMonitor = hardwareMonitor ?? throw new ArgumentNullException(nameof(hardwareMonitor));
-                _userWatcher = userWatcher ?? throw new ArgumentNullException(nameof(userWatcher));
-
-                _seqService = seqService;
-                _logger = logger;
-
-                CreateJobs();
-            }
-            catch (Exception ex)
-            {
-                var tiex = new TypeInitializationException(typeof(HomeBot).FullName, ex);
-               _logger?.LogError(tiex, $"{nameof(HomeBot)} initialization error");
-            }
+            CreateJobs();
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             try
             {
+                await InitializeDataBaseAsync();
+
                 await _hardwareMonitor.StartAsync(cancellationToken);
-                await _userWatcher.StartAsync(cancellationToken);
                 _scheduler.Start(3000, 1000);
 
                 string startMessage = $"Bot '{nameof(HomeBot)}' started."
@@ -92,20 +80,36 @@ namespace Home.Bot
         {
             _scheduler.Stop();
             await _hardwareMonitor.StopAsync(cancellationToken);
-            await _userWatcher.StopAsync(cancellationToken);
 
             _logger?.LogInformation("Bot stopped");
+        }
+
+        private async Task InitializeDataBaseAsync()
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var scopedServices = scope.ServiceProvider;
+                var db = scopedServices.GetRequiredService<HomeContext>();
+
+                await db.Database.EnsureCreatedAsync();
+            }
         }
 
         private void CreateJobs()
         {
             _scheduler.Jobs.AddRange(_hardwareMonitor.Jobs);
-            _scheduler.Jobs.AddRange(_userWatcher.Jobs);
 
-            var userWatcherInformerJob = (IJob<string>)_scheduler.Jobs.Single(j => j.Description == Constants.USER_WATCHER_INFORMING_JOB_NAME);
-            userWatcherInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
-
-            var hardwareMonitorInformerJob = (IJob<string>)_scheduler.Jobs.Single(j => j.Description == Constants.HARDWARE_MONITOR_INFORMING_JOB_NAME);
+            var inactiveUsersInformerJob = new ProgramJob<string>(
+                period: TimeSpan.FromHours(1),
+                method: _userWatcher.DetectLongTimeInactiveUsersAsync,
+                description: Constants.InactiveUsersInformer,
+                startUtcDate: DateTime.UtcNow + TimeSpan.FromSeconds(5),
+                logger: _logger);
+                
+            inactiveUsersInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
+            _scheduler.Jobs.Add(inactiveUsersInformerJob);
+            
+            var hardwareMonitorInformerJob = (IJob<string>)_scheduler.Jobs.Single(j => j.Description == Constants.HardwareWarningsInformer);
             hardwareMonitorInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
 
             if (_seqService != null)
@@ -167,7 +171,7 @@ namespace Home.Bot
         private async void Job_ExecutionCompleted(IJob<string> job, IOperationResult<string> result)
         {
             if (result?.IsSuccess == false)
-                _logger.LogWarning("Job \"{Job}\" execution failed. Result: {Result}", job.Description, result.Value);
+                _logger.LogWarning("Job \"{Job}\" execution failed. Resuob, IOperationRelt: {Result}", job.Description, result.Value);
 
             // On start
             if (result == null)
@@ -181,7 +185,7 @@ namespace Home.Bot
                 {
                     var preparedMessage = result.Value.ReplaceEndingWithThreeDots(4000);
 
-                    if (job.Description == Constants.USER_WATCHER_INFORMING_JOB_NAME)
+                    if (job.Description == Constants.InactiveUsersInformer)
                     {
                         var todaysAlerts = await _messagesRepo.FindAllTodaysMessagesWithTextAsync("is not active for");
 
