@@ -3,15 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <OutputType>Library</OutputType>
+    <Nullable>enable</Nullable>
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="SQL\ForeignTales.sql" />
-    <None Remove="SQL\Indexes.sql" />
-    <None Remove="SQL\Priveleges.sql" />
-    <None Remove="SQL\StoredFunctions.sql" />
-    <None Remove="SQL\Views.sql" />
-  </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="SQL\ForeignTales.sql" />
@@ -22,11 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.3">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Zs.Bot.Data.PostgreSQL" Version="6.0.3" />
+    <PackageReference Include="Zs.Bot.Data.PostgreSQL" Version="6.0.10" />
   </ItemGroup>
 
   <ItemGroup>

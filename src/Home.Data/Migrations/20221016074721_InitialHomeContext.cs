@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Zs.Bot.Data.PostgreSQL;
 
 #nullable disable
 
@@ -93,9 +92,9 @@ namespace Home.Data.Migrations
                 {
                     user_id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn),
-                    first_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    last_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    raw_data = table.Column<string>(type: "json", nullable: true),
+                    first_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    last_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    raw_data = table.Column<string>(type: "json", nullable: false),
                     update_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
                     insert_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
                 },
@@ -324,8 +323,8 @@ namespace Home.Data.Migrations
                 columns: new[] { "id", "chat_type_id", "description", "insert_date", "name", "raw_data", "raw_data_hash", "raw_data_history" },
                 values: new object[,]
                 {
-                    { -1, "PRIVATE", "IntegrationTestChat", new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6758), "IntegrationTestChat", "{ \"test\": \"test\" }", "-1063294487", null },
-                    { 1, "PRIVATE", null, new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6763), "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null }
+                    { -1, "PRIVATE", "IntegrationTestChat", new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2342), "IntegrationTestChat", "{ \"test\": \"test\" }", "-1063294487", null },
+                    { 1, "PRIVATE", null, new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2343), "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null }
                 });
 
             migrationBuilder.InsertData(
@@ -334,9 +333,9 @@ namespace Home.Data.Migrations
                 columns: new[] { "id", "full_name", "insert_date", "is_bot", "name", "raw_data", "raw_data_hash", "raw_data_history", "user_role_id" },
                 values: new object[,]
                 {
-                    { -10, "for exported message reading", new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6794), false, "Unknown", "{ \"test\": \"test\" }", "-1063294487", null, "USER" },
-                    { -1, "IntegrationTest", new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6798), false, "IntegrationTestUser", "{ \"test\": \"test\" }", "-1063294487", null, "USER" },
-                    { 1, "Сергей Зуев", new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6800), false, "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null, "OWNER" }
+                    { -10, "for exported message reading", new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2365), false, "Unknown", "{ \"test\": \"test\" }", "-1063294487", null, "USER" },
+                    { -1, "IntegrationTest", new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2366), false, "IntegrationTestUser", "{ \"test\": \"test\" }", "-1063294487", null, "USER" },
+                    { 1, "Сергей Зуев", new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2366), false, "zuev56", "{ \"Id\": 210281448 }", "-1063294487", null, "OWNER" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -386,9 +385,6 @@ namespace Home.Data.Migrations
                 schema: "bot",
                 table: "users",
                 column: "user_role_id");
-
-            migrationBuilder.Sql(PostgreSqlBotContext.GetOtherSqlScripts(@"..\Home.Bot\appsettings.json"));
-            migrationBuilder.Sql(Data.HomeContext.GetOtherSqlScripts(@"..\Home.Bot\appsettings.json"));
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

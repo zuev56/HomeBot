@@ -17,7 +17,7 @@ namespace Home.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.0-rc.2.21480.5")
+                .HasAnnotation("ProductVersion", "6.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseSerialColumns(modelBuilder);
@@ -74,6 +74,7 @@ namespace Home.Data.Migrations
                     NpgsqlPropertyBuilderExtensions.UseSerialColumn(b.Property<int>("Id"));
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("first_name");
@@ -85,11 +86,13 @@ namespace Home.Data.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("last_name");
 
                     b.Property<string>("RawData")
+                        .IsRequired()
                         .HasColumnType("json")
                         .HasColumnName("raw_data");
 
@@ -169,7 +172,7 @@ namespace Home.Data.Migrations
                             Id = -1,
                             ChatTypeId = "PRIVATE",
                             Description = "IntegrationTestChat",
-                            InsertDate = new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6758),
+                            InsertDate = new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2342),
                             Name = "IntegrationTestChat",
                             RawData = "{ \"test\": \"test\" }",
                             RawDataHash = "-1063294487",
@@ -179,7 +182,7 @@ namespace Home.Data.Migrations
                         {
                             Id = 1,
                             ChatTypeId = "PRIVATE",
-                            InsertDate = new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6763),
+                            InsertDate = new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2343),
                             Name = "zuev56",
                             RawData = "{ \"Id\": 210281448 }",
                             RawDataHash = "-1063294487",
@@ -581,7 +584,7 @@ namespace Home.Data.Migrations
                         {
                             Id = -10,
                             FullName = "for exported message reading",
-                            InsertDate = new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6794),
+                            InsertDate = new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2365),
                             IsBot = false,
                             Name = "Unknown",
                             RawData = "{ \"test\": \"test\" }",
@@ -593,7 +596,7 @@ namespace Home.Data.Migrations
                         {
                             Id = -1,
                             FullName = "IntegrationTest",
-                            InsertDate = new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6798),
+                            InsertDate = new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2366),
                             IsBot = false,
                             Name = "IntegrationTestUser",
                             RawData = "{ \"test\": \"test\" }",
@@ -605,7 +608,7 @@ namespace Home.Data.Migrations
                         {
                             Id = 1,
                             FullName = "Сергей Зуев",
-                            InsertDate = new DateTime(2021, 11, 6, 12, 19, 45, 916, DateTimeKind.Utc).AddTicks(6800),
+                            InsertDate = new DateTime(2022, 10, 16, 7, 47, 20, 937, DateTimeKind.Utc).AddTicks(2366),
                             IsBot = false,
                             Name = "zuev56",
                             RawData = "{ \"Id\": 210281448 }",
