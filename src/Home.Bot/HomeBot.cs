@@ -144,10 +144,10 @@ namespace Home.Bot
 
         private async Task<string> GetSeqEvents(DateTime fromDate)
         {
-            var events = await _seqService.GetLastEvents(fromDate, 10, _configuration.GetSection("Seq:ObservedSignals").Get<int[]>());
-            return events?.Count > 0
+            var events = await _seqService?.GetLastEvents(fromDate, 10, _configuration.GetSection("Seq:ObservedSignals").Get<int[]>());
+            return events.Count > 0
                 ? string.Join(Environment.NewLine + Environment.NewLine, events)
-                : null;
+                : string.Empty;
         }
 
         private string CreateMessageFromSeqEvents(List<SeqEvent> events)
@@ -171,17 +171,21 @@ namespace Home.Bot
         private async void Job_ExecutionCompleted(IJob<string> job, IOperationResult<string> result)
         {
             if (result?.IsSuccess == false)
+            {
                 _logger.LogWarning("Job \"{Job}\" execution failed. Resuob, IOperationRelt: {Result}", job.Description, result.Value);
+            }
 
             // On start
             if (result == null)
+            {
                 return;
+            }
 
             try
             {
                 if (result.IsSuccess && !string.IsNullOrWhiteSpace(result.Value)
-                    && DateTime.Now.Hour >= _configuration.GetSection("Notifier:Time:FromHour").Get<int>()
-                    && DateTime.Now.Hour < _configuration.GetSection("Notifier:Time:ToHour").Get<int>())
+                    && DateTime.Now.Hour >= _configuration.GetValue<int>("Notifier:Time:FromHour")
+                    && DateTime.Now.Hour < _configuration.GetValue<int>("Notifier:Time:ToHour"))
                 {
                     var preparedMessage = result.Value.ReplaceEndingWithThreeDots(4000);
 
@@ -189,8 +193,10 @@ namespace Home.Bot
                     {
                         var todaysAlerts = await _messagesRepo.FindAllTodaysMessagesWithTextAsync("is not active for");
 
-                        if (!todaysAlerts.Any(m => m.Text.WithoutDigits() == preparedMessage.WithoutDigits()))
+                        if (!todaysAlerts.Any(m => m.Text?.WithoutDigits() == preparedMessage.WithoutDigits()))
+                        {
                             await _messenger.AddMessageToOutboxAsync(preparedMessage, Role.Owner, Role.Admin);
+                        }
                     }
                     else
                     {
@@ -203,6 +209,5 @@ namespace Home.Bot
                 _logger?.LogError(ex, "Job's ExecutionCompleted handler error", result);
             }
         }
-
     }
 }

@@ -36,18 +36,19 @@ namespace Home.Bot.Services
                 var getActivityUrl = $"{baseUrl}/api/activity/{userId}/last-utc";
                 var lastSeen = await ApiHelper.GetAsync<DateTime>(getActivityUrl);
                 var interval = DateTime.UtcNow - lastSeen;
-                if (interval >= TimeSpan.FromMinutes(inactiveHoursLimit))
+                if (interval >= TimeSpan.FromHours(inactiveHoursLimit))
                 {
                     var getUserUrl = $"{baseUrl}/api/users/{userId}";
                     var user = await ApiHelper.GetAsync<UserDto>(getUserUrl, throwExceptionOnError: true);
                     if (user != null)
                     {
                         var userName = $"{user.FirstName} {user.LastName}";
-                        result.AppendLine($"User {userName} is not active for {interval}");
+                        result.AppendLine($"User {userName} is not active for {interval:hh\\:mm\\:ss}");
                     }
                 }
             }
-            return result.ToString();
+            
+            return result.ToString().Trim();
         }
     }
 }
