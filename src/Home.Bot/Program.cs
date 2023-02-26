@@ -1,31 +1,20 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using Home.Bot.Abstractions;
 using Home.Bot.Services;
-using Home.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
-using Telegram.Bot;
-using Zs.Bot.Data.Abstractions;
-using Zs.Bot.Data.PostgreSQL;
-using Zs.Bot.Data.PostgreSQL.Repositories;
-using Zs.Bot.Data.Repositories;
-using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
-using Zs.Bot.Services.Messaging;
-using Zs.Common.Abstractions;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
 using Zs.Common.Services.Abstractions;
-using Zs.Common.Services.Connection;
-using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduler;
-using Zs.Common.Services.Shell;
 
 namespace Home.Bot
 {
@@ -35,7 +24,7 @@ namespace Home.Bot
         {
             try
             {
-                Serilog.Log.Logger = new LoggerConfiguration()
+                Log.Logger = new LoggerConfiguration()
                     .ReadFrom.Configuration(CreateConfiguration(args), "Serilog")
                     .CreateLogger();
 
@@ -75,88 +64,34 @@ namespace Home.Bot
             if (configuration["SecretsPath"] != null)
                 configuration.AddJsonFile(configuration["SecretsPath"]);
 
-            EnsureConfigurationIsCorrect(configuration);
-
             return configuration;
         }
 
-        private static void EnsureConfigurationIsCorrect(IConfiguration configuration)
-        {
-            // TODO
-            // BotToken
-            // ConnectionStrings
-            // etc
-        }
-
-        public static IHostBuilder CreateHostBuilder(string[] args)
+        private static IHostBuilder CreateHostBuilder(string[] args)
         {
             return Host.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration((hostContext, configurationBuilder) => configurationBuilder.AddConfiguration(CreateConfiguration(args)))
+                .ConfigureAppConfiguration((_, configurationBuilder) => configurationBuilder.AddConfiguration(CreateConfiguration(args)))
                 .UseSerilog()
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddDbContext<HomeContext>(options =>
-                        options.UseNpgsql(hostContext.Configuration["ConnectionStrings:Default"]));
+                    var configuration = hostContext.Configuration;
 
-                    services.AddDbContext<PostgreSqlBotContext>(options =>
-                        options.UseNpgsql(hostContext.Configuration["ConnectionStrings:Default"]));
-                    
-                    // For repositories
-                    services.AddScoped<IDbContextFactory<HomeContext>, HomeContextFactory>();
-                    services.AddScoped<IDbContextFactory<PostgreSqlBotContext>, PostgreSqlBotContextFactory>();
-
-                    services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
-                    {
-                        var connectionAnalyzer = new ConnectionAnalyser(
-                            sp.GetService<ILogger<ConnectionAnalyser>>(),
-                            hostContext.Configuration.GetSection("ConnectionAnalyser:Urls").Get<string[]>());
-
-                        if (hostContext.Configuration.GetSection("Proxy:UseProxy")?.Get<bool>() == true)
-                        {
-                            connectionAnalyzer.InitializeProxy(hostContext.Configuration["Proxy:Socket"],
-                                hostContext.Configuration.GetSecretValue("Proxy:Login"),
-                                hostContext.Configuration.GetSecretValue("Proxy:Password"));
-
-                            HttpClient.DefaultProxy = connectionAnalyzer.WebProxy;
-                        }
-                        return connectionAnalyzer;
-                    });
-
-                    services.AddScoped<ISeqService, SeqService>(sp =>
-                        new SeqService(hostContext.Configuration["Seq:ServerUrl"], hostContext.Configuration.GetSecretValue("Seq:ApiToken")));
-
-                    services.AddScoped<ITelegramBotClient>(sp =>
-                        new TelegramBotClient(hostContext.Configuration.GetSecretValue("Bot:Token"), new HttpClient()));
-
-                    services.AddScoped<IMessenger, TelegramMessenger>();
-
-                    services.AddScoped<ICommandsRepository, CommandsRepository<PostgreSqlBotContext>>();
-                    services.AddScoped<IUserRolesRepository, UserRolesRepository<PostgreSqlBotContext>>();
-                    services.AddScoped<IChatsRepository, ChatsRepository<PostgreSqlBotContext>>();
-                    services.AddScoped<IUsersRepository, UsersRepository<PostgreSqlBotContext>>();
-                    services.AddScoped<IMessagesRepository, MessagesRepository<PostgreSqlBotContext>>();
+                    services
+                        .AddDatabase(configuration)
+                        .AddConnectionAnalyzer(configuration)
+                        .AddTelegramBot(configuration)
+                        .AddSeq(configuration)
+                        .AddDbClient(configuration)
+                        .AddShellLauncher(configuration);
 
                     services.AddScoped<IScheduler, Scheduler>();
                     services.AddScoped<IMessageDataSaver, MessageDataDBSaver>();
-                    services.AddScoped<IDbClient, DbClient>(sp =>
-                        new DbClient(
-                            hostContext.Configuration.GetSecretValue("ConnectionStrings:Default"),
-                            sp.GetService<ILogger<DbClient>>())
-                        );
-
-                    services.AddScoped<IShellLauncher, ShellLauncher>(sp =>
-                    new ShellLauncher(
-                        bashPath: hostContext.Configuration.GetSecretValue("Bot:BashPath"),
-                        powerShellPath: hostContext.Configuration.GetSecretValue("Bot:PowerShellPath")
-                    ));
                     services.AddScoped<ICommandManager, CommandManager>();
                     services.AddScoped<IHardwareMonitor, ThinkPadX230HardwareMonitor>();
-                    services.AddScoped<IUserWatcher, Services.UserWatcher>();
+                    services.AddScoped<IUserWatcher, UserWatcher>();
 
                     services.AddHostedService<HomeBot>();
                 });
         }
-
-        
     }
 }
