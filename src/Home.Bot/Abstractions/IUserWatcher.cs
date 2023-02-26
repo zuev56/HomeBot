@@ -1,4 +1,6 @@
-﻿namespace Home.Bot.Abstractions
+﻿using System.Threading.Tasks;
+
+namespace Home.Bot.Abstractions
 {
     internal interface IUserWatcher
     {

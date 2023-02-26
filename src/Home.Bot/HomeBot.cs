@@ -1,11 +1,16 @@
-﻿using Home.Bot.Abstractions;
+﻿using System;
+using System.Collections.Generic;
+using Home.Bot.Abstractions;
 using Home.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Enums;
 using Zs.Bot.Services.Messaging;
@@ -100,7 +105,7 @@ namespace Home.Bot
             _scheduler.Jobs.AddRange(_hardwareMonitor.Jobs);
 
             var inactiveUsersInformerJob = new ProgramJob<string>(
-                period: TimeSpan.FromHours(1),
+                period: TimeSpan.FromMinutes(5),
                 method: _userWatcher.DetectLongTimeInactiveUsersAsync,
                 description: Constants.InactiveUsersInformer,
                 startUtcDate: DateTime.UtcNow + TimeSpan.FromSeconds(5),
