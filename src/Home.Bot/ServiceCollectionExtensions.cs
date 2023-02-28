@@ -12,8 +12,6 @@ using Zs.Bot.Data.Repositories;
 using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
-using Zs.Common.Extensions;
-using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Connection;
 using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Shell;
@@ -57,8 +55,8 @@ internal static class ServiceCollectionExtensions
             if (useProxy)
             {
                 var socket = configuration["Proxy:Socket"];
-                var login = configuration.GetSecretValue("Proxy:Login");
-                var password = configuration.GetSecretValue("Proxy:Password");
+                var login = configuration["Proxy:Login"];
+                var password = configuration["Proxy:Password"];
 
                 connectionAnalyzer.InitializeProxy(socket, login, password);
                 HttpClient.DefaultProxy = connectionAnalyzer.WebProxy;
@@ -72,7 +70,7 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddTelegramBot(this IServiceCollection services, IConfiguration configuration)
     {
-        var token = configuration.GetSecretValue("Bot:Token");
+        var token = configuration["Bot:Token"];
         var httpClient = new HttpClient();
 
         services.AddScoped<ITelegramBotClient>(_ => new TelegramBotClient(token, httpClient));
@@ -84,7 +82,7 @@ internal static class ServiceCollectionExtensions
     internal static IServiceCollection AddSeq(this IServiceCollection services, IConfiguration configuration)
     {
         var url = configuration["Seq:ServerUrl"];
-        var token = configuration.GetSecretValue("Seq:ApiToken");
+        var token = configuration["Seq:ApiToken"];
 
         services.AddScoped<ISeqService, SeqService>(_ => new SeqService(url, token));
 
@@ -93,7 +91,7 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddDbClient(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetSecretValue("ConnectionStrings:Default");
+        var connectionString = configuration["ConnectionStrings:Default"];
 
         services.AddScoped<IDbClient, DbClient>(sp =>
             new DbClient(connectionString, sp.GetService<ILogger<DbClient>>()));
@@ -103,8 +101,8 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddShellLauncher(this IServiceCollection services, IConfiguration configuration)
     {
-        var bashPath = configuration.GetSecretValue("Bot:BashPath");
-        var powerShellPath = configuration.GetSecretValue("Bot:PowerShellPath");
+        var bashPath = configuration["Bot:BashPath"];
+        var powerShellPath = configuration["Bot:PowerShellPath"];
 
         services.AddScoped<IShellLauncher, ShellLauncher>(sp => new ShellLauncher(bashPath, powerShellPath));
 

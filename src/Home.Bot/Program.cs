@@ -10,10 +10,9 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
+using Zs.Common.Enums;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
-using Zs.Common.Models;
-using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Scheduler;
 
 namespace Home.Bot
@@ -39,7 +38,7 @@ namespace Home.Bot
             }
             catch (Exception ex)
             {
-                ProgramUtilites.TrySaveFailInfo(ex.ToText());
+                TrySaveFailInfo(ex.ToText());
                 Console.WriteLine(ex.ToText());
                 Console.Read();
             }
@@ -47,11 +46,13 @@ namespace Home.Bot
 
         private static IConfiguration CreateConfiguration(string[] args)
         {
-            if (!File.Exists(ProgramUtilites.MainConfigurationPath))
+            var appsettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+
+            if (!File.Exists(appsettingsPath))
                 throw new AppsettingsNotFoundException();
 
             var configuration = new ConfigurationManager();
-            configuration.AddJsonFile(ProgramUtilites.MainConfigurationPath, optional: false, reloadOnChange: true);
+            configuration.AddJsonFile(appsettingsPath, optional: false, reloadOnChange: true);
 
             foreach (var arg in args)
             {
@@ -92,6 +93,19 @@ namespace Home.Bot
 
                     services.AddHostedService<HomeBot>();
                 });
+        }
+
+        private static void TrySaveFailInfo(string text)
+        {
+            try
+            {
+                var path = Path.Combine(Directory.GetCurrentDirectory(), $"Critical_failure_{DateTime.Now:yyyy.MM.dd HH:mm:ss.ff}.log");
+                File.AppendAllText(path, text);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n\n{ex}\nMessage:\n{ex.Message}\n\nStackTrace:\n{ex.StackTrace}");
+            }
         }
     }
 }

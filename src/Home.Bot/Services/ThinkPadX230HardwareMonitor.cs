@@ -9,11 +9,11 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Zs.Bot.Services.Messaging;
-using Zs.Common.Abstractions;
+using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
-using Zs.Common.Services.Abstractions;
 using Zs.Common.Services.Scheduler;
+using Zs.Common.Services.Shell;
 
 namespace Home.Bot.Services
 {
@@ -27,7 +27,7 @@ namespace Home.Bot.Services
         private readonly IShellLauncher _shellLauncher;
         private readonly ILogger<ThinkPadX230HardwareMonitor> _logger;
 
-        public IReadOnlyCollection<IJobBase> Jobs { get; init; }
+        public IReadOnlyCollection<JobBase> Jobs { get; init; }
 
         public ThinkPadX230HardwareMonitor(
             IConfiguration configuration,
@@ -35,7 +35,7 @@ namespace Home.Bot.Services
             IShellLauncher shellLauncher,
             ILogger<ThinkPadX230HardwareMonitor> logger)
         {
-            Jobs = new List<IJob>();
+            Jobs = new List<Job>();
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             _shellLauncher = shellLauncher ?? throw new ArgumentNullException(nameof(shellLauncher));
@@ -56,7 +56,7 @@ namespace Home.Bot.Services
             return Task.CompletedTask;
         }
 
-        private List<IJobBase> CreateJobs()
+        private List<JobBase> CreateJobs()
         {
             var hardwareMonitorJob = new ProgramJob<string>(
                 period: TimeSpan.FromMinutes(5),
@@ -64,30 +64,39 @@ namespace Home.Bot.Services
                 startUtcDate: DateTime.UtcNow + TimeSpan.FromSeconds(5),
                 description: Constants.HardwareWarningsInformer
             );
-           
-            return new List<IJobBase>() { hardwareMonitorJob };
+
+            return new List<JobBase> { hardwareMonitorJob };
         }
 
         private async Task<string> CombineHardwareAnalyzeResults()
         {
-            var fullAnalyzeResult = await AnalyzeCpuTemperature();
-            fullAnalyzeResult.Merge(await AnalyzeMemoryUsage());
-            fullAnalyzeResult.Merge(await AnalyzeCpuUsage());
+            // TODO: Make parallel
+            var cpuTemperatureResult = await AnalyzeCpuTemperature();
+            var memoryUsageResult = await AnalyzeMemoryUsage();
+            var cpuUsageResult = await AnalyzeCpuUsage();
 
-            return fullAnalyzeResult.JoinMessages();
+            var message = (cpuTemperatureResult.Successful ? cpuTemperatureResult.Value : cpuTemperatureResult.Fault!.Message) + Environment.NewLine + Environment.NewLine
+                + (memoryUsageResult.Successful ? memoryUsageResult.Value : memoryUsageResult.Fault!.Message) + Environment.NewLine + Environment.NewLine
+                + (cpuUsageResult.Successful ? cpuUsageResult.Value : cpuUsageResult.Fault!.Message);
+
+            return message;
         }
 
         public async Task<float> GetCpuTemperature()
         {
             var commandResult = await _shellLauncher.RunBashAsync("sensors -j");
 
-            if (!commandResult.IsSuccess)
-                throw new Exception(commandResult.Messages.Single().Text);
+            if (!commandResult.Successful)
+            {
+                throw new FaultException(commandResult.Fault!);
+            }
 
             if (string.IsNullOrWhiteSpace(commandResult.Value))
-                throw new Exception("Empty result");
+            {
+                throw new FaultException(Fault.Unknown.SetMessage("Empty result"));
+            }
 
-            _logger.LogTrace("Bash command result: {Result}", commandResult.ToJSON());
+            //_logger.LogTrace("Bash command result: {Result}", commandResult.ToJSON());
 
             var jsonNode = JsonNode.Parse(commandResult.Value);
 
@@ -102,13 +111,17 @@ namespace Home.Bot.Services
             // MemAvailable:   12935852 kB
             // ...
 
-            if (!commandResult.IsSuccess)
-                throw new Exception(commandResult.Messages.Single().Text);
+            if (!commandResult.Successful)
+            {
+                throw new FaultException(commandResult.Fault!);
+            }
 
             if (string.IsNullOrWhiteSpace(commandResult.Value))
-                throw new Exception("Empty result");
+            {
+                throw new FaultException(Fault.Unknown.SetMessage("Empty result"));
+            }
 
-            _logger.LogTrace("Bash command result: {Result}", commandResult.ToJSON());
+            //_logger.LogTrace("Bash command result: {Result}", commandResult.ToJSON());
 
             var memUsage = commandResult.Value
                     .Split("kB", StringSplitOptions.RemoveEmptyEntries)
@@ -123,10 +136,10 @@ namespace Home.Bot.Services
                     })
                     .ToArray();
 
-            int total = memUsage.Single(i => i.Name == Constants.MemTotal).Size;
-            int availavle = memUsage.Single(i => i.Name == Constants.MemAvailable).Size;
+            var total = memUsage.Single(i => i.Name == Constants.MemTotal).Size;
+            var available = memUsage.Single(i => i.Name == Constants.MemAvailable).Size;
 
-            return 100 - availavle / (double)total * 100;
+            return 100 - available / (double)total * 100;
         }
 
         public async Task<float> GetCpuUsage() => (await HtopCpuUsage())[0];
@@ -140,13 +153,17 @@ namespace Home.Bot.Services
             var commandResult = await _shellLauncher.RunBashAsync("cat /proc/loadavg | awk '{print $1\"-\"$2\"-\"$3}'");
             // Approximate result: 0.07-0.06-0.01
 
-            if (!commandResult.IsSuccess)
-                throw new Exception(commandResult.Messages.Single().Text);
+            if (!commandResult.Successful)
+            {
+                throw new FaultException(commandResult.Fault!);
+            }
 
             if (string.IsNullOrWhiteSpace(commandResult.Value))
-                throw new Exception("Empty result");
+            {
+                throw new FaultException(Fault.Unknown.SetMessage("Empty result"));
+            }
 
-            _logger.LogTrace("Bash command result: {Result}", commandResult.ToJSON());
+            //_logger.LogTrace("Bash command result: {Result}", commandResult.ToJSON());
 
             return commandResult.Value
                 .Split('-')
@@ -154,7 +171,7 @@ namespace Home.Bot.Services
                 .ToArray();
         }
 
-        private async Task<IOperationResult> AnalyzeCpuTemperature()
+        private async Task<Result<string>> AnalyzeCpuTemperature()
         {
             try
             {
@@ -163,17 +180,17 @@ namespace Home.Bot.Services
                 _logger.LogDebug("CPU temperature: {CPUTemperature}°C", cpuTemperature.ToString("0.##"));
 
                 return cpuTemperature >= _configuration.GetSection("Home:ComputerManager:WarnTemperature").Get<float>()
-                    ? ServiceResult.Warning($"CPU temperature: {cpuTemperature}°C")
-                    : ServiceResult.Success();
+                    ? Result.Success($"CPU temperature: {cpuTemperature}°C")
+                    : Result.Success(string.Empty);
             }
             catch (Exception ex)
             {
                 _logger.LogErrorIfNeed(ex, "Unable to get temperature sensors info: {ExceptionType}\n{Message}\n{StackTrace}", ex.GetType(), ex.Message, ex.StackTrace);
-                return ServiceResult.Error($"Unable to get temperature sensors info: {ex.Message}");
+                return Result.Fail<string>(Fault.Unknown.SetMessage($"Unable to get temperature sensors info: {ex.Message}"));
             }
         }
 
-        private async Task<IOperationResult> AnalyzeMemoryUsage()
+        private async Task<Result<string>> AnalyzeMemoryUsage()
         {
             try
             {
@@ -182,17 +199,17 @@ namespace Home.Bot.Services
                 _logger.LogDebug("Memory usage {MemoryUsage}%", Math.Round(memoryUsagePercent, 0));
 
                 return memoryUsagePercent > _configuration.GetSection("Home:ComputerManager:WarnMemoryUsagePercent").Get<int>()
-                    ? ServiceResult.Warning($"Memory usage {memoryUsagePercent}%")
-                    : ServiceResult.Success();
+                    ? Result.Success($"Memory usage {memoryUsagePercent}%")
+                    : Result.Success(string.Empty);
             }
             catch (Exception ex)
             {
                 _logger.LogErrorIfNeed(ex, "Unable to get memory usage: {ExceptionType}\n{Message}\n{StackTrace}", ex.GetType(), ex.Message, ex.StackTrace);
-                return ServiceResult.Error($"Unable to get memory usage: {ex.Message}");
+                return Result.Fail<string>(Fault.Unknown.SetMessage($"Unable to get memory usage: {ex.Message}"));
             }
         }
 
-        private async Task<IOperationResult> AnalyzeCpuUsage()
+        private async Task<Result<string>> AnalyzeCpuUsage()
         {
             try
             {
@@ -201,13 +218,13 @@ namespace Home.Bot.Services
                 _logger.LogDebug("CPU usage {CpuUsage}", cpuUsage);
 
                 return cpuUsage > _configuration.GetSection("Home:ComputerManager:WarnCpuUsage").Get<float>()
-                    ? ServiceResult.Warning($"15 minutes average CPU usage {cpuUsage}")
-                    : ServiceResult.Success();
+                    ? Result.Success($"15 minutes average CPU usage {cpuUsage}")
+                    : Result.Success(string.Empty);
             }
             catch (Exception ex)
             {
                 _logger.LogErrorIfNeed(ex, "Unable to get CPU usage: {ExceptionType}\n{Message}\n{StackTrace}", ex.GetType(), ex.Message, ex.StackTrace);
-                return ServiceResult.Error($"Unable to get CPU usage: {ex.Message}");
+                return Result.Fail<string>(Fault.Unknown.SetMessage($"Unable to get CPU usage: {ex.Message}"));
             }
         }
 

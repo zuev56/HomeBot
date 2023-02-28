@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Zs.Common.Services.Abstractions;
+using Zs.Common.Services.Scheduler;
 
 namespace Home.Bot.Abstractions
 {
     internal interface IHardwareMonitor
     {
-        public IReadOnlyCollection<IJobBase> Jobs { get; }
+        public IReadOnlyCollection<JobBase> Jobs { get; }
 
         Task<float> Get15minAvgCpuUsage();
         Task<float> Get5minAvgCpuUsage();

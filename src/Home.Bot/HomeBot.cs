@@ -11,12 +11,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Home.Bot.Services;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Enums;
 using Zs.Bot.Services.Messaging;
-using Zs.Common.Abstractions;
 using Zs.Common.Extensions;
-using Zs.Common.Services.Abstractions;
+using Zs.Common.Models;
 using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduler;
 
@@ -32,6 +32,7 @@ namespace Home.Bot
         private readonly IMessagesRepository _messagesRepo;
         private readonly IServiceProvider _serviceProvider;
         private readonly ISeqService? _seqService;
+        private readonly WeatherAnalyzer _weatherAnalyzer;
         private readonly ILogger<HomeBot> _logger;
 
         public HomeBot(
@@ -42,6 +43,7 @@ namespace Home.Bot
             IHardwareMonitor hardwareMonitor,
             IUserWatcher userWatcher,
             IServiceProvider serviceProvider,
+            WeatherAnalyzer weatherAnalyzer,
             ILogger<HomeBot> logger,
             ISeqService? seqService = null)
         {
@@ -52,6 +54,7 @@ namespace Home.Bot
             _hardwareMonitor = hardwareMonitor;
             _userWatcher = userWatcher;
             _serviceProvider = serviceProvider;
+            _weatherAnalyzer = weatherAnalyzer;
             _logger = logger;
             _seqService = seqService;
 
@@ -65,7 +68,7 @@ namespace Home.Bot
                 await InitializeDataBaseAsync();
 
                 await _hardwareMonitor.StartAsync(cancellationToken);
-                _scheduler.Start(3000, 1000);
+                _scheduler.Start(3.Seconds(), 1.Seconds());
 
                 string startMessage = $"Bot '{nameof(HomeBot)}' started."
                     + Environment.NewLine + Environment.NewLine
@@ -110,18 +113,29 @@ namespace Home.Bot
                 description: Constants.InactiveUsersInformer,
                 startUtcDate: DateTime.UtcNow + TimeSpan.FromSeconds(5),
                 logger: _logger);
-                
+
             inactiveUsersInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
             _scheduler.Jobs.Add(inactiveUsersInformerJob);
-            
-            var hardwareMonitorInformerJob = (IJob<string>)_scheduler.Jobs.Single(j => j.Description == Constants.HardwareWarningsInformer);
+
+            var hardwareMonitorInformerJob = (Job<string>)_scheduler.Jobs.Single(j => j.Description == Constants.HardwareWarningsInformer);
             hardwareMonitorInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
+
+            if (true)
+            {
+                var analyzeWeatherJob = new ProgramJob<string>(
+                    period: TimeSpan.FromSeconds(300),
+                    method: async () => await _weatherAnalyzer.AnalyzeAsync(),
+                    startUtcDate: DateTime.UtcNow + TimeSpan.FromSeconds(10)
+                );
+                analyzeWeatherJob.ExecutionCompleted += Job_ExecutionCompleted;
+                _scheduler.Jobs.Add(analyzeWeatherJob);
+            }
 
             if (_seqService != null)
             {
                 var dayErrorsAndWarningsInformer = new ProgramJob<string>(
                     period: TimeSpan.FromHours(1),
-                    method: () => GetSeqEvents(DateTime.UtcNow - TimeSpan.FromHours(1)),
+                    method: () => GetSeqEventsAsync(DateTime.UtcNow - TimeSpan.FromHours(1)),
                     startUtcDate: DateTime.UtcNow.NextHour(),
                     description: "dayErrorsAndWarningsInformer"
                 );
@@ -130,7 +144,7 @@ namespace Home.Bot
 
                 var nightErrorsAndWarningsInformer = new ProgramJob<string>(
                     period: TimeSpan.FromDays(1),
-                    method: () => GetSeqEvents(DateTime.UtcNow - TimeSpan.FromHours(12)),
+                    method: () => GetSeqEventsAsync(DateTime.UtcNow - TimeSpan.FromHours(12)),
                     startUtcDate: DateTime.UtcNow.Date + TimeSpan.FromHours(24 + 10),
                     description: "nightErrorsAndWarningsInformer"
                 );
@@ -147,9 +161,9 @@ namespace Home.Bot
             _scheduler.Jobs.Add(logProcessStateInfo);
         }
 
-        private async Task<string> GetSeqEvents(DateTime fromDate)
+        private async Task<string> GetSeqEventsAsync(DateTime fromDate)
         {
-            var events = await _seqService?.GetLastEvents(fromDate, 10, _configuration.GetSection("Seq:ObservedSignals").Get<int[]>());
+            var events = await _seqService?.GetLastEventsAsync(fromDate, 10, _configuration.GetSection("Seq:ObservedSignals").Get<int[]>());
             return events.Count > 0
                 ? string.Join(Environment.NewLine + Environment.NewLine, events)
                 : string.Empty;
@@ -173,9 +187,11 @@ namespace Home.Bot
             return sb.ToString();
         }
 
-        private async void Job_ExecutionCompleted(IJob<string> job, IOperationResult<string> result)
+
+
+        private async void Job_ExecutionCompleted(Job<string> job, Result<string> result)
         {
-            if (result?.IsSuccess == false)
+            if (result?.Successful == false)
             {
                 _logger.LogWarning("Job \"{Job}\" execution failed. Resuob, IOperationRelt: {Result}", job.Description, result.Value);
             }
@@ -188,7 +204,7 @@ namespace Home.Bot
 
             try
             {
-                if (result.IsSuccess && !string.IsNullOrWhiteSpace(result.Value)
+                if (result.Successful && !string.IsNullOrWhiteSpace(result.Value)
                     && DateTime.Now.Hour >= _configuration.GetValue<int>("Notifier:Time:FromHour")
                     && DateTime.Now.Hour < _configuration.GetValue<int>("Notifier:Time:ToHour"))
                 {

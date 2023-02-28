@@ -6,7 +6,7 @@ using Home.Bot.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Zs.Bot.Data.Abstractions;
-using Zs.Common.Services.WebAPI;
+using Zs.Common.Services.Http;
 
 namespace Home.Bot.Services
 {
@@ -36,12 +36,12 @@ namespace Home.Bot.Services
             foreach (var userId in trackedUserIds)
             {
                 var getActivityUrl = $"{baseUrl}/api/activity/{userId}/last-utc";
-                var lastSeen = await ApiHelper.GetAsync<DateTime>(getActivityUrl);
+                var lastSeen = await Request.GetAsync<DateTime>(getActivityUrl);
                 var interval = DateTime.UtcNow - lastSeen;
                 if (interval >= TimeSpan.FromHours(inactiveHoursLimit))
                 {
                     var getUserUrl = $"{baseUrl}/api/users/{userId}";
-                    var user = await ApiHelper.GetAsync<UserDto>(getUserUrl, throwExceptionOnError: true);
+                    var user = await Request.GetAsync<UserDto>(getUserUrl, throwExceptionOnError: true);
                     if (user != null)
                     {
                         var userName = $"{user.FirstName} {user.LastName}";
