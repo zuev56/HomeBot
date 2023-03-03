@@ -1,29 +1,28 @@
 ﻿using Home.Data.Models.Vk;
-using Home.Services.Vk;
 using Home.Services.Vk.Models;
 using Home.Web.Areas.ApiVk.Models;
 using Home.Web.Areas.App.Models.Vk;
 using System.Collections.Generic;
 using System.Linq;
-using Zs.Common.Abstractions;
+using Zs.Common.Models;
 
 namespace Home.Web.Areas.App.Services
 {
     public class VkMapper
     {
-        internal IEnumerable<UserVM> ToUsersVM(IOperationResult<List<User>> users)
+        internal IEnumerable<UserVM> ToUsersVM(Result<List<User>> users)
         {
             // TODO: handle error
             return users.Value.Select(u => ToUserVM(u));
         }
 
-        internal IEnumerable<UserVM> ToUsersVMWithActivity(IOperationResult<List<UserWithActivity>> usersWithActivity)
+        internal IEnumerable<UserVM> ToUsersVMWithActivity(Result<List<UserWithActivity>> usersWithActivity)
         {
             // TODO: handle error
             return usersWithActivity.Value.Select(u => ToUserVM(u.User, u.ActivitySec));
         }
 
-        internal DetailedUserActivityVM ToDetailedUserActivityVM(IOperationResult<DetailedUserActivity> activity)
+        internal DetailedUserActivityVM ToDetailedUserActivityVM(Result<DetailedUserActivity> activity)
         {
             // TODO: handle error
             return new DetailedUserActivityVM
@@ -44,7 +43,7 @@ namespace Home.Web.Areas.App.Services
             };
         }
 
-        internal PeriodUserActivityVM ToPeriodUserActivityVM(IOperationResult<SimpleUserActivity> activity)
+        internal PeriodUserActivityVM ToPeriodUserActivityVM(Result<SimpleUserActivity> activity)
         {
             // TODO: handle error
             return new PeriodUserActivityVM

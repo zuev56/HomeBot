@@ -44,13 +44,13 @@ internal static class ServiceCollectionExtensions
     // TODO: move to Zs.Common.Services
     internal static IServiceCollection AddConnectionAnalyzer(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddScoped<IConnectionAnalyser, ConnectionAnalyser>(sp =>
+        services.AddScoped<IConnectionAnalyzer, ConnectionAnalyzer>(sp =>
         {
             var urls = configuration.GetSection("ConnectionAnalyser:Urls").Get<string[]>();
-            var logger = sp.GetService<ILogger<ConnectionAnalyser>>();
+            var logger = sp.GetService<ILogger<ConnectionAnalyzer>>();
             var useProxy = configuration.GetSection("Proxy:UseProxy")?.Get<bool>() ?? false;
 
-            var connectionAnalyzer = new ConnectionAnalyser(logger, urls);
+            var connectionAnalyzer = new ConnectionAnalyzer(logger, urls);
 
             if (useProxy)
             {
@@ -58,7 +58,7 @@ internal static class ServiceCollectionExtensions
                 var login = configuration["Proxy:Login"];
                 var password = configuration["Proxy:Password"];
 
-                connectionAnalyzer.InitializeProxy(socket, login, password);
+                //connectionAnalyzer.InitializeProxy(socket, login, password);
                 HttpClient.DefaultProxy = connectionAnalyzer.WebProxy;
             }
 

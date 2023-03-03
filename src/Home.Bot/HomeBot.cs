@@ -18,7 +18,8 @@ using Zs.Bot.Services.Messaging;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
 using Zs.Common.Services.Logging.Seq;
-using Zs.Common.Services.Scheduler;
+using Zs.Common.Services.Scheduling;
+using Zs.Common.Utilities;
 
 namespace Home.Bot
 {
@@ -212,7 +213,7 @@ namespace Home.Bot
 
                     if (job.Description == Constants.InactiveUsersInformer)
                     {
-                        var todaysAlerts = await _messagesRepo.FindAllTodaysMessagesWithTextAsync("is not active for");
+                        var todaysAlerts = await _messagesRepo.FindAllTodayMessagesWithTextAsync("is not active for");
 
                         if (!todaysAlerts.Any(m => m.Text?.WithoutDigits() == preparedMessage.WithoutDigits()))
                         {

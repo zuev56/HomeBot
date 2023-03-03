@@ -23,7 +23,7 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="5.2.2" />
-    <PackageReference Include="Zs.Bot.Messenger.Telegram" Version="7.0.0-preview-1" />
+    <PackageReference Include="Zs.Bot.Messenger.Telegram" Version="7.0.0" />
     <PackageReference Include="Zs.EspMeteo.Parser" Version="7.0.2" />
   </ItemGroup>
 

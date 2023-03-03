@@ -1,5 +1,4 @@
 ﻿using Home.Data.Models.Vk;
-using Home.Services.Vk;
 using Home.Services.Vk.Models;
 using Home.Web.API.Areas.Vk.Models;
 using Zs.Common.Extensions;

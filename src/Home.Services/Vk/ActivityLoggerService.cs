@@ -7,14 +7,11 @@ using Home.Data.Abstractions;
 using Home.Data.Models.Vk;
 using Home.Data.Models.VkAPI;
 using Home.Services.Vk.Models;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Zs.Common.Abstractions;
-using Zs.Common.Enums;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
-using Zs.Common.Services.WebAPI;
+using Zs.Common.Services.Http;
 using User = Home.Data.Models.Vk.User;
 
 namespace Home.Services.Vk;
@@ -40,17 +37,20 @@ public class ActivityLoggerService : IActivityLoggerService
         _logger = logger;
 
         _version = _configuration["Home:Vk:Version"] != null ? float.Parse(_configuration["Home:Vk:Version"], CultureInfo.InvariantCulture) : null;
-        _accessToken = _configuration.GetSecretValue("Home:Vk:AccessToken");
+        _accessToken = _configuration["Home:Vk:AccessToken"];
     }
 
     /// <inheritdoc/>
-    public async Task<IOperationResult<List<User>>> AddNewUsersAsync(params int[] userIds)
+    public async Task<Result<List<User>>> AddNewUsersAsync(params int[] userIds)
     {
         if (userIds == null || userIds.Length == 0 || _accessToken == null || _version == null)
-            return ServiceResult<List<User>>.Error(ErrorMessage.CANT_ACCESS_API_WITHOUT_REQUIRED_PARAMS);
+        {
+            var fault = new Fault(ErrorMessage.CANT_ACCESS_API_WITHOUT_REQUIRED_PARAMS);
+            return Result.Fail<List<User>>(fault);
+        }
 
         var resultUsersList = new List<User>();
-        var result = ServiceResult<List<User>>.Success(resultUsersList);
+        var result = Result.Success(resultUsersList);
         try
         {
             var url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',', userIds)}"
@@ -61,15 +61,19 @@ public class ActivityLoggerService : IActivityLoggerService
                     + "is_favorite,is_hidden_from_feed,timezone,screen_name,maiden_name,is_friend,friend_status,career,military,"
                     + $"blacklisted,blacklisted_by_me,can_be_invited_group&access_token={_accessToken}&v={_version.Value.ToString(CultureInfo.InvariantCulture)}";
 
-            var response = await ApiHelper.GetAsync<ApiResponse>(url, throwExceptionOnError: true);
+            var response = await Request.GetAsync<ApiResponse>(url, throwExceptionOnError: true);
 
             if (response is null)
-                return ServiceResult<List<User>>.Error("Response is null");
+            {
+                return Result.Fail<List<User>>(Fault.Unknown.SetMessage("Response is null"));
+            }
 
             var existingDbUsers = await _vkUsersRepo.FindAllAsync(userIds);
 
             if (existingDbUsers?.Count > 0)
-                result.AddMessage($"Existing users won't be added. Existing users IDs: {string.Join(',', existingDbUsers.Select(u => u.Id))}", InfoMessageType.Warning);
+            {
+                //result.AddMessage($"Existing users won't be added. Existing users IDs: {string.Join(',', existingDbUsers.Select(u => u.Id))}", InfoMessageType.Warning);
+            }
 
             var usersForSave = response.Users.Where(u => !existingDbUsers.Select(eu => eu.Id).Contains(u.Id)).Select(u => (User)u);
             var savedSuccessfully = await _vkUsersRepo.SaveRangeAsync(usersForSave);
@@ -80,22 +84,22 @@ public class ActivityLoggerService : IActivityLoggerService
                 return result;
             }
             else
-                return ServiceResult<List<User>>.Error("User saving failed");
+                return Result.Fail<List<User>>(Fault.Unknown.SetMessage("User saving failed"));
         }
         catch (Exception ex)
         {
             _logger?.LogErrorIfNeed(ex, "New users saving failed");
-            return ServiceResult<List<User>>.Error("New users saving failed");
+            return Result.Fail<List<User>>(Fault.Unknown.SetMessage("New users saving failed"));
         }
     }
 
     /// <inheritdoc/>
-    public async Task<IOperationResult> SaveVkUsersActivityAsync()
+    public async Task<Result> SaveVkUsersActivityAsync()
     {
         if (_accessToken == null || _version == null)
-            return ServiceResult.Error(ErrorMessage.CANT_ACCESS_API_WITHOUT_REQUIRED_PARAMS);
+            return Result.Fail(Fault.Unknown.SetMessage(ErrorMessage.CANT_ACCESS_API_WITHOUT_REQUIRED_PARAMS));
 
-        ServiceResult result = ServiceResult.Success();
+        Result result = Result.Success();
         try
         {
             var vkUsers = await _vkUsersRepo.FindAllAsync();
@@ -103,32 +107,33 @@ public class ActivityLoggerService : IActivityLoggerService
 
             if (!userIds.Any())
             {
-                result.AddMessage("There are no users in the database", InfoMessageType.Warning);
-                return result;
+                //result.AddMessage("There are no users in the database", InfoMessageType.Warning);
+                //return result;
+                return Result.Fail(Fault.Unknown.SetMessage("There are no users in the database"));
             }
 
             string url = $"https://api.vk.com/method/users.get?user_ids={string.Join(',', userIds)}"
                        + $"&fields=online,online_mobile,online_app,last_seen&access_token={_accessToken}&v={_version.Value.ToString(CultureInfo.InvariantCulture)}";
 
-            var response = await ApiHelper.GetAsync<ApiResponse>(url, throwExceptionOnError: true);
+            var response = await Request.GetAsync<ApiResponse>(url, throwExceptionOnError: true);
 
             if (response is null)
             {
                 bool saveResult = await SetUndefinedActivityToAllVkUsers();
                 _logger?.LogWarning("Set undefined activity to all VkUsers (succeeded: {SaveResult})", saveResult);
-                result.AddMessage(InfoMessage.Warning("Response is null. Setting undefined activity to all VkUsers"));
+                //result.AddMessage(InfoMessage.Warning("Response is null. Setting undefined activity to all VkUsers"));
                 return result;
             }
 
             int loggedItemsCount = await LogVkUsersActivityAsync(response.Users);
 
-            result.AddMessage(InfoMessage.Warning($"Logged {loggedItemsCount} activities"));
+            //result.AddMessage(InfoMessage.Warning($"Logged {loggedItemsCount} activities"));
             return result;
         }
         catch (Exception ex)
         {
             _logger?.LogErrorIfNeed(ex, "SaveVkUsersActivityAsync error");
-            return ServiceResult.Error("Users activity saving error");
+            return Result.Fail(Fault.Unknown.SetMessage("Users activity saving error"));
         }
     }
 

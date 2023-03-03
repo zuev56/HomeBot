@@ -12,7 +12,7 @@ using Zs.Bot.Services.Messaging;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
-using Zs.Common.Services.Scheduler;
+using Zs.Common.Services.Scheduling;
 using Zs.Common.Services.Shell;
 
 namespace Home.Bot.Services

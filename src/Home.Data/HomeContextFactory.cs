@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using System;
-using Zs.Common.Extensions;
 
 namespace Home.Data
 {
@@ -28,7 +27,7 @@ namespace Home.Data
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile(System.IO.Path.GetFullPath(@"../Home.Bot/appsettings.Development.json"))
                 .Build();
-            var connectionString = configuration.GetSecretValue("ConnectionStrings:Default");
+            var connectionString = configuration["ConnectionStrings:Default"];
 
             var optionsBuilder = new DbContextOptionsBuilder<HomeContext>();
             optionsBuilder.UseNpgsql(connectionString);

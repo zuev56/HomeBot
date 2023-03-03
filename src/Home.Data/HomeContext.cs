@@ -51,7 +51,7 @@ namespace Home.Data
 
             var connectionStringBuilder = new DbConnectionStringBuilder()
             {
-                ConnectionString = configuration.GetSecretValue("ConnectionStrings:Default")
+                ConnectionString = configuration["ConnectionStrings:Default"]
             };
             var dbName = connectionStringBuilder["Database"] as string;
 

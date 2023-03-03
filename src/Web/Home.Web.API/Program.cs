@@ -1,12 +1,9 @@
 using System;
-using System.IO;
-using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Zs.Common.Exceptions;
-using Zs.Common.Models;
+using Zs.Common.Extensions;
 
 namespace Home.Web.API
 {
@@ -20,33 +17,35 @@ namespace Home.Web.API
             }
             catch (Exception ex)
             {
-                var text = $"\n\n{ex}\nMessage:\n{ex.Message}\n\nStackTrace:\n{ex.StackTrace}";
-                ProgramUtilites.TrySaveFailInfo(text);
+                ex.TrySaveToFile();
             }
         }
 
         private static IConfiguration CreateConfiguration(string[] args)
         {
-            if (!File.Exists(ProgramUtilites.MainConfigurationPath))
-                throw new AppsettingsNotFoundException();
-
-            var configuration = new ConfigurationManager();
-            configuration.AddJsonFile(ProgramUtilites.MainConfigurationPath, optional: false, reloadOnChange: true);
-
-            foreach (var arg in args)
-            {
-                if (!File.Exists(arg))
-                    throw new FileNotFoundException($"Wrong configuration path:\n{arg}");
-
-                configuration.AddJsonFile(arg, optional: true, reloadOnChange: true);
-            }
-
-            if (configuration["SecretsPath"] != null)
-                configuration.AddJsonFile(configuration["SecretsPath"]);
-
-            //AssertConfigurationIsCorrect(configuration);
-
-            return configuration;
+            throw new NotImplementedException();
+            //if (!File.Exists(ProgramUtilites.MainConfigurationPath))
+            //{
+            //    throw new AppsettingsNotFoundException();
+            //}
+//
+            //var configuration = new ConfigurationManager();
+            //configuration.AddJsonFile(ProgramUtilites.MainConfigurationPath, optional: false, reloadOnChange: true);
+//
+            //foreach (var arg in args)
+            //{
+            //    if (!File.Exists(arg))
+            //        throw new FileNotFoundException($"Wrong configuration path:\n{arg}");
+//
+            //    configuration.AddJsonFile(arg, optional: true, reloadOnChange: true);
+            //}
+//
+            //if (configuration["SecretsPath"] != null)
+            //    configuration.AddJsonFile(configuration["SecretsPath"]);
+//
+            ////AssertConfigurationIsCorrect(configuration);
+//
+            //return configuration;
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args)

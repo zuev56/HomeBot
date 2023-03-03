@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Zs.Common.Extensions;
 
 namespace Home.Web
 {
@@ -26,7 +25,7 @@ namespace Home.Web
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<HomeContext>(options =>
-                options.UseNpgsql(_configuration.GetSecretValue("ConnectionStrings:Default"))
+                options.UseNpgsql(_configuration["ConnectionStrings:Default"])
                        .EnableDetailedErrors(true)
                        .EnableSensitiveDataLogging(true));
 
@@ -82,15 +81,15 @@ namespace Home.Web
 
             app.UseEndpoints(endpoints =>
             {
-                // Для маршрутов с областями
+                // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 endpoints.MapControllerRoute(
                     name: "AreaRoute",
                     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-                // Вроде нужно для маршрутов в виде атрибута - уточнить https://docs.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-5.0
+                // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ https://docs.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-5.0
                 endpoints.MapControllers();
                 
-                // Для маршрутов без областей
+                // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");

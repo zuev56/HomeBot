@@ -10,10 +10,9 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
-using Zs.Common.Enums;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
-using Zs.Common.Services.Scheduler;
+using Zs.Common.Services.Scheduling;
 
 namespace Home.Bot
 {
@@ -86,7 +85,7 @@ namespace Home.Bot
                         .AddShellLauncher(configuration);
 
                     services.AddScoped<IScheduler, Scheduler>();
-                    services.AddScoped<IMessageDataSaver, MessageDataDBSaver>();
+                    services.AddScoped<IMessageDataSaver, MessageDataDbSaver>();
                     services.AddScoped<ICommandManager, CommandManager>();
                     services.AddScoped<IHardwareMonitor, ThinkPadX230HardwareMonitor>();
                     services.AddScoped<IUserWatcher, UserWatcher>();

@@ -12,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Zs.Common.Extensions;
 
 namespace Home.Web.API
 {
@@ -30,7 +29,7 @@ namespace Home.Web.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<HomeContext>(options =>
-                options.UseNpgsql(_configuration.GetSecretValue("ConnectionStrings:Default"))
+                options.UseNpgsql(_configuration["ConnectionStrings:Default"])
                        .EnableDetailedErrors(true) // TODO: set from configuration
                        .EnableSensitiveDataLogging(true)); // TODO: set from configuration
 
@@ -96,12 +95,12 @@ namespace Home.Web.API
 
             app.UseEndpoints(endpoints =>
             {
-                // Для маршрутов с областями
+                // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 endpoints.MapControllerRoute(
                     name: "AreaRoute",
                     pattern: "api/{area}/{controller}/{action}/{id?}");
 
-                // Вроде нужно для маршрутов в виде атрибута - уточнить https://docs.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-5.0
+                // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ https://docs.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-5.0
                 endpoints.MapControllers();
             });
         }

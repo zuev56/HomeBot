@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Zs.Common.Extensions;
 
 namespace Home.Web.API.Areas.Vk.Controllers
 {
@@ -35,7 +34,7 @@ namespace Home.Web.API.Areas.Vk.Controllers
         public async Task<IActionResult> GetUsersWithActivity(string filterText, DateTime fromDate, DateTime toDate)
         {
             var usersWithActivityResult = await _activityAnalyzerService.GetUsersWithActivityAsync(filterText, fromDate, toDate);
-            usersWithActivityResult.AssertResultIsSuccessful();
+            usersWithActivityResult.EnsureSuccess();
 
             return Ok(_mapper.Map<List<ListUserDto>>(usersWithActivityResult.Value));
         }
@@ -56,7 +55,7 @@ namespace Home.Web.API.Areas.Vk.Controllers
         public async Task<IActionResult> GetPeriodInfo(int userId, DateTime fromDate, DateTime toDate)
         {
             var periodStatisticsResult = await _activityAnalyzerService.GetUserStatisticsForPeriodAsync(userId, fromDate, toDate);
-            periodStatisticsResult.AssertResultIsSuccessful();
+            periodStatisticsResult.EnsureSuccess();
 
             return Ok(_mapper.Map<PeriodInfoDto>(periodStatisticsResult.Value));
         }
@@ -65,7 +64,7 @@ namespace Home.Web.API.Areas.Vk.Controllers
         public async Task<IActionResult> GetFullTimeInfo(int userId)
         {
             var fullTimeStatistictResult = await _activityAnalyzerService.GetFullTimeUserStatisticsAsync(userId);
-            fullTimeStatistictResult.AssertResultIsSuccessful();
+            fullTimeStatistictResult.EnsureSuccess();
 
             return Ok(_mapper.Map<FullTimeInfoDto>(fullTimeStatistictResult.Value));
         }

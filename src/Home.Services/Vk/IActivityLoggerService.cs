@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Home.Data.Models.Vk;
-using Zs.Common.Abstractions;
+using Zs.Common.Models;
 
 namespace Home.Services.Vk;
 
@@ -9,8 +9,8 @@ public interface IActivityLoggerService
 {
     /// <summary> Add new Vk user ID</summary>
     /// <param name="userIds">VK user ID</param>
-    Task<IOperationResult<List<User>>> AddNewUsersAsync(params int[] userIds);
+    Task<Result<List<User>>> AddNewUsersAsync(params int[] userIds);
 
     /// <summary> Activity data collection </summary>
-    Task<IOperationResult> SaveVkUsersActivityAsync();
+    Task<Result> SaveVkUsersActivityAsync();
 }

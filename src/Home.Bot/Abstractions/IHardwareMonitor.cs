@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Zs.Common.Services.Scheduler;
+using Zs.Common.Services.Scheduling;
 
 namespace Home.Bot.Abstractions
 {
