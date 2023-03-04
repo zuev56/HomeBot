@@ -4,26 +4,17 @@ using System.Threading.Tasks;
 using Home.Bot.Abstractions;
 using Home.Bot.Models;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Zs.Bot.Data.Abstractions;
 using Zs.Common.Services.Http;
 
 namespace Home.Bot.Services
 {
     internal class UserWatcher : IUserWatcher
     {
-        private readonly IUsersRepository _usersRepository;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<UserWatcher> _logger;
 
-        public UserWatcher(
-            IUsersRepository usersRepository,
-            IConfiguration configuration,
-            ILogger<UserWatcher> logger)
+        public UserWatcher(IConfiguration configuration)
         {
-            _usersRepository = usersRepository;
             _configuration = configuration;
-            _logger = logger;
         }
 
         public async Task<string> DetectLongTimeInactiveUsersAsync()
@@ -38,18 +29,20 @@ namespace Home.Bot.Services
                 var getActivityUrl = $"{baseUrl}/api/activity/{userId}/last-utc";
                 var lastSeen = await Request.GetAsync<DateTime>(getActivityUrl);
                 var interval = DateTime.UtcNow - lastSeen;
-                if (interval >= TimeSpan.FromHours(inactiveHoursLimit))
+                if (interval < TimeSpan.FromHours(inactiveHoursLimit))
                 {
-                    var getUserUrl = $"{baseUrl}/api/users/{userId}";
-                    var user = await Request.GetAsync<UserDto>(getUserUrl, throwExceptionOnError: true);
-                    if (user != null)
-                    {
-                        var userName = $"{user.FirstName} {user.LastName}";
-                        result.AppendLine($"User {userName} is not active for {interval:hh\\:mm\\:ss}");
-                    }
+                    continue;
+                }
+
+                var getUserUrl = $"{baseUrl}/api/users/{userId}";
+                var user = await Request.GetAsync<UserDto>(getUserUrl, throwExceptionOnError: true);
+                if (user != null)
+                {
+                    var userName = $"{user.FirstName} {user.LastName}";
+                    result.AppendLine($"User {userName} is not active for {interval:hh\\:mm\\:ss}");
                 }
             }
-            
+
             return result.ToString().Trim();
         }
     }
