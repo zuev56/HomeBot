@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Home.Bot.Models;
 using Microsoft.Extensions.Logging;
+using Zs.Common.Extensions;
 using Zs.EspMeteo.Parser;
 using Zs.EspMeteo.Parser.Models;
 
@@ -12,63 +14,79 @@ namespace Home.Bot.Services;
 internal sealed class WeatherAnalyzer
 {
     private readonly EspMeteoParser _espMeteoParser;
-    private readonly EspMeteoDeviceSettings[] _deviceSettings;
-    private readonly ILogger<WeatherAnalyzer> _logger;
+    private readonly WeatherAnalyzerOptions _weatherAnalyzerOptions;
+    private readonly ILogger<WeatherAnalyzer>? _logger;
+
+    private readonly TimeSpan _alarmInterval = 2.Hours();
+    private DateTime? _lastAlarmDate = DateTime.UtcNow - 2.Hours();
 
     public WeatherAnalyzer(
         EspMeteoParser espMeteoParser,
-        EspMeteoDeviceSettings[] deviceSettings,
-        ILogger<WeatherAnalyzer> logger)
+        WeatherAnalyzerOptions weatherAnalyzerOptions,
+        ILogger<WeatherAnalyzer>? logger)
     {
         _espMeteoParser = espMeteoParser;
-        _deviceSettings = deviceSettings;
+        _weatherAnalyzerOptions = weatherAnalyzerOptions;
         _logger = logger;
     }
 
     public async Task<string> AnalyzeAsync()
     {
+        // Временный костыль
+        if (DateTime.UtcNow < _lastAlarmDate + _alarmInterval)
+        {
+            return string.Empty;
+        }
+
         var espMeteoInfos = await GetEspMeteoInfosAsync();
-        var deviations = GetDeviationsInfo(espMeteoInfos);
+        var deviations = GetDeviationsInfo(espMeteoInfos).Trim();
+
+        // Временный костыль
+        if (!string.IsNullOrEmpty(deviations))
+        {
+            _lastAlarmDate = DateTime.UtcNow;
+        }
 
         return deviations;
     }
 
     private async Task<EspMeteo[]> GetEspMeteoInfosAsync()
     {
-        var parseTasks = _deviceSettings
-            .Select(s => s.EspMeteoUri)
+        var parseTasks = _weatherAnalyzerOptions.Devices
+            .Select(static d => d.Uri)
             .Select(url => _espMeteoParser.ParseAsync(url));
 
         var espMeteos = await Task.WhenAll(parseTasks);
         return espMeteos;
     }
 
-    private string? GetDeviationsInfo(IEnumerable<EspMeteo> espMeteoInfos)
+    private string GetDeviationsInfo(IEnumerable<EspMeteo> espMeteoInfos)
     {
         var deviations = new StringBuilder();
         foreach (var espMeteoInfo in espMeteoInfos)
         {
-            var settings = _deviceSettings.Single(s => s.EspMeteoUri == espMeteoInfo.Uri);
+            var settings = _weatherAnalyzerOptions.Devices.Single(s => s.Uri == espMeteoInfo.Uri);
             var deviceDeviations = AnalyzeDeviations(espMeteoInfo, settings);
-
-            if (deviceDeviations is not null)
+            if (string.IsNullOrEmpty(deviceDeviations))
             {
-                deviations.AppendLine();
-                deviations.AppendLine(deviceDeviations);
+                continue;
             }
+
+            deviations.AppendLine();
+            deviations.AppendLine(deviceDeviations);
         }
 
-        return deviations.Length == 0 ? null : deviations.ToString();
+        return deviations.ToString();
     }
 
-    private static string? AnalyzeDeviations(EspMeteo espMeteoInfo, EspMeteoDeviceSettings espMeteoSettings)
+    private static string AnalyzeDeviations(EspMeteo espMeteoInfo, DeviceOptions deviceOptions)
     {
-        var espMeteoDeviceName = $"{espMeteoSettings.DeviceName ?? espMeteoInfo.Uri}";
+        var espMeteoDeviceName = $"[{deviceOptions.Name ?? espMeteoInfo.Uri}].";
         var deviations = new StringBuilder(espMeteoDeviceName);
 
         foreach (var sensor in espMeteoInfo.Sensors)
         {
-            var sensorSettings = espMeteoSettings.SensorInfos.SingleOrDefault(s => s.SensorName == sensor.Name);
+            var sensorSettings = deviceOptions.Sensors.SingleOrDefault(s => s.Name == sensor.Name);
             if (sensorSettings is null)
             {
                 continue;
@@ -76,27 +94,27 @@ internal sealed class WeatherAnalyzer
 
             foreach (var parameter in sensor.Parameters)
             {
-                var parameterSettings = sensorSettings.ParameterInfos.SingleOrDefault(s => s.ParameterName == parameter.Name);
+                var parameterSettings = sensorSettings.Parameters.SingleOrDefault(s => s.Name == parameter.Name);
                 if (parameterSettings is null)
                 {
                     continue;
                 }
 
-                if (parameter.Value > parameterSettings.Limits.High)
+                if (parameter.Value > parameterSettings.HighLimit)
                 {
-                    var deviation = $"[{sensor.Name}].[{parameter.Name}]: value {parameter.Value} is higher than limit {parameterSettings.Limits.High}";
+                    var deviation = $"[{sensor.Name}].[{parameter.Name}]: value {parameter.Value} {parameter.Unit} is higher than limit {parameterSettings.HighLimit} {parameter.Unit}";
                     deviations.AppendLine(deviation);
                 }
 
-                if (parameter.Value < parameterSettings.Limits.Low)
+                if (parameter.Value < parameterSettings.LowLimit)
                 {
-                    var deviation = $"[{sensor.Name}].[{parameter.Name}]: value {parameter.Value} is lower than limit {parameterSettings.Limits.Low}";
+                    var deviation = $"[{sensor.Name}].[{parameter.Name}]: value {parameter.Value} {parameter.Unit} is lower than limit {parameterSettings.LowLimit} {parameter.Unit}";
                     deviations.AppendLine(deviation);
                 }
             }
         }
 
         var result = deviations.ToString();
-        return result == espMeteoDeviceName ? null : result;
+        return result == espMeteoDeviceName ? string.Empty : result;
     }
 }

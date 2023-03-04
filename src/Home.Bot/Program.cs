@@ -12,11 +12,12 @@ using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
+using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduling;
 
 namespace Home.Bot
 {
-    public class Program
+    public sealed class Program
     {
         public static async Task Main(string[] args)
         {
@@ -78,11 +79,12 @@ namespace Home.Bot
 
                     services
                         .AddDatabase(configuration)
-                        .AddConnectionAnalyzer(configuration)
+                        .AddConnectionAnalyzer()
                         .AddTelegramBot(configuration)
                         .AddSeq(configuration)
                         .AddDbClient(configuration)
-                        .AddShellLauncher(configuration);
+                        .AddShellLauncher(configuration)
+                        .AddWeatherAnalyzer(configuration);
 
                     services.AddScoped<IScheduler, Scheduler>();
                     services.AddScoped<IMessageDataSaver, MessageDataDbSaver>();

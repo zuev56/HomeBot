@@ -1,9 +1,12 @@
 using System.Net.Http;
+using Home.Bot.Models;
+using Home.Bot.Services;
 using Home.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.PostgreSQL;
@@ -12,9 +15,9 @@ using Zs.Bot.Data.Repositories;
 using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
-using Zs.Common.Services.Connection;
 using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Shell;
+using Zs.EspMeteo.Parser;
 
 namespace Home.Bot;
 
@@ -42,31 +45,6 @@ internal static class ServiceCollectionExtensions
     }
 
     // TODO: move to Zs.Common.Services
-    internal static IServiceCollection AddConnectionAnalyzer(this IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddScoped<IConnectionAnalyzer, ConnectionAnalyzer>(sp =>
-        {
-            var urls = configuration.GetSection("ConnectionAnalyser:Urls").Get<string[]>();
-            var logger = sp.GetService<ILogger<ConnectionAnalyzer>>();
-            var useProxy = configuration.GetSection("Proxy:UseProxy")?.Get<bool>() ?? false;
-
-            var connectionAnalyzer = new ConnectionAnalyzer(logger, urls);
-
-            if (useProxy)
-            {
-                var socket = configuration["Proxy:Socket"];
-                var login = configuration["Proxy:Login"];
-                var password = configuration["Proxy:Password"];
-
-                //connectionAnalyzer.InitializeProxy(socket, login, password);
-                HttpClient.DefaultProxy = connectionAnalyzer.WebProxy;
-            }
-
-            return connectionAnalyzer;
-        });
-
-        return services;
-    }
 
     internal static IServiceCollection AddTelegramBot(this IServiceCollection services, IConfiguration configuration)
     {
@@ -105,6 +83,26 @@ internal static class ServiceCollectionExtensions
         var powerShellPath = configuration["Bot:PowerShellPath"];
 
         services.AddScoped<IShellLauncher, ShellLauncher>(sp => new ShellLauncher(bashPath, powerShellPath));
+
+        return services;
+    }
+
+    internal static IServiceCollection AddWeatherAnalyzer(this IServiceCollection services, IConfiguration configuration)
+    {
+        //services.Configure<EspMeteoOptions>(configuration.GetSection(EspMeteoOptions.SectionName));
+        services.AddOptions<WeatherAnalyzerOptions>()
+            .Bind(configuration.GetSection(WeatherAnalyzerOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddSingleton<EspMeteoParser>();
+
+        services.AddSingleton<WeatherAnalyzer>(static provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<WeatherAnalyzerOptions>>().Value;
+            var parser = provider.GetRequiredService<EspMeteoParser>();
+            var logger = provider.GetRequiredService<ILogger<WeatherAnalyzer>>();
+            return new WeatherAnalyzer(parser, options, logger);
+        });
 
         return services;
     }
