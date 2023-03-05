@@ -4,35 +4,34 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Zs.Bot.Data.Abstractions;
 
-namespace Home.Data.Models.Vk
+namespace Home.Data.Models.Vk;
+
+/// <summary> Vk user </summary>
+[Table("users", Schema = "vk")]
+public partial class User : IDbEntity<User, int>
 {
-    /// <summary> Vk user </summary>
-    [Table("users", Schema = "vk")]
-    public partial class User : IDbEntity<User, int>
-    {
-        [Key]
-        [Column("user_id", TypeName = "integer")]
-        public int Id { get; set; }
+    [Key]
+    [Column("user_id", TypeName = "integer")]
+    public int Id { get; set; }
 
-        [StringLength(50)]
-        [Column("first_name", TypeName = "character varying(50)")]
-        public string FirstName { get; set; }
+    [StringLength(50)]
+    [Column("first_name", TypeName = "character varying(50)")]
+    public string FirstName { get; set; }
 
-        [StringLength(50)]
-        [Column("last_name", TypeName = "character varying(50)")]
-        public string LastName { get; set; }
+    [StringLength(50)]
+    [Column("last_name", TypeName = "character varying(50)")]
+    public string LastName { get; set; }
 
-        [Column("raw_data", TypeName = "json")]
-        public string RawData { get; set; }
+    [Column("raw_data", TypeName = "json")]
+    public string RawData { get; set; }
 
-        [Column("update_date", TypeName = "timestamp with time zone")]
-        public DateTime UpdateDate { get; set; }
+    [Column("update_date", TypeName = "timestamp with time zone")]
+    public DateTime UpdateDate { get; set; }
 
-        [Column("insert_date", TypeName = "timestamp with time zone")]
-        public DateTime InsertDate { get; set; }
-        [JsonIgnore]
-        public Func<User> GetItemForSave => () => this;
-        [JsonIgnore]
-        public Func<User, User> GetItemForUpdate => (existingItem) => this;
-    }
+    [Column("insert_date", TypeName = "timestamp with time zone")]
+    public DateTime InsertDate { get; set; }
+    [JsonIgnore]
+    public Func<User> GetItemForSave => () => this;
+    [JsonIgnore]
+    public Func<User, User> GetItemForUpdate => (existingItem) => this;
 }

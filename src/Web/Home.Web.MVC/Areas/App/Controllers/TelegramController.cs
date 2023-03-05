@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 
-namespace Home.Web.Areas.App.Controllers
+namespace Home.Web.Areas.App.Controllers;
+
+public class TelegramController : Controller
 {
-    public class TelegramController : Controller
+    public IActionResult Index()
     {
-        public IActionResult Index()
-        {
-            throw new NotImplementedException();
-            //return View();
-        }
+        throw new NotImplementedException();
+        //return View();
     }
 }

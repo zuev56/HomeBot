@@ -5,45 +5,44 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 
-namespace Home.Web.Areas.Admin.Services
+namespace Home.Web.Areas.Admin.Services;
+
+/// <summary>
+/// Service that getting information about observed services (daemons)
+/// </summary>
+public class ServicesInfoService
 {
-    /// <summary>
-    /// Service that getting information about observed services (daemons)
-    /// </summary>
-    public class ServicesInfoService
+    private readonly IConfiguration _configuration;
+
+    public ServicesInfoService(IConfiguration configuration)
     {
-        private readonly IConfiguration _configuration;
+        _configuration = configuration;
+    }
 
-        public ServicesInfoService(IConfiguration configuration)
+    internal List<Service> GetServicesInfoList()
+    {
+        var connectionStrings = _configuration.GetSection("ConnectionStrings")
+            .GetChildren().Select(i => i.Value);
+
+        var dbNames = new List<string>();
+        var csBuilder = new DbConnectionStringBuilder();
+        foreach (var connString in connectionStrings)
         {
-            _configuration = configuration;
+            csBuilder.ConnectionString = connString;
+            dbNames.Add((string)csBuilder["Database"]);
         }
 
-        internal List<Service> GetServicesInfoList()
-        {
-            var connectionStrings = _configuration.GetSection("ConnectionStrings")
-                .GetChildren().Select(i => i.Value);
-
-            var dbNames = new List<string>();
-            var csBuilder = new DbConnectionStringBuilder();
-            foreach (var connString in connectionStrings)
-            {
-                csBuilder.ConnectionString = connString;
-                dbNames.Add((string)csBuilder["Database"]);
-            }
-
-            return dbNames.Distinct().Select(n => new Service { Name = n }).ToList();
-        }
+        return dbNames.Distinct().Select(n => new Service { Name = n }).ToList();
+    }
 
 
-        //private List<Log> GetLastLog(int itemsCount, InfoMessageType type)
-        //{
-        //    throw new NotImplementedException();
-        //}
+    //private List<Log> GetLastLog(int itemsCount, InfoMessageType type)
+    //{
+    //    throw new NotImplementedException();
+    //}
 
-        private DbInfo GetDbInfo(string connectionString)
-        {
-            throw new NotImplementedException();
-        }
+    private DbInfo GetDbInfo(string connectionString)
+    {
+        throw new NotImplementedException();
     }
 }

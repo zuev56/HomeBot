@@ -4,40 +4,39 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Zs.Bot.Data.Abstractions;
 
-namespace Home.Data.Models.Vk
+namespace Home.Data.Models.Vk;
+
+/// <summary> Vk users activity log item </summary>
+[Table("activity_log", Schema = "vk")]
+public partial class ActivityLogItem : IDbEntity<ActivityLogItem, int>
 {
-    /// <summary> Vk users activity log item </summary>
-    [Table("activity_log", Schema = "vk")]
-    public partial class ActivityLogItem : IDbEntity<ActivityLogItem, int>
-    {
-        [Key]
-        [Column("activity_log_id", TypeName = "integer")]
-        public int Id { get; set; }
+    [Key]
+    [Column("activity_log_id", TypeName = "integer")]
+    public int Id { get; set; }
 
-        [Required(ErrorMessage = "Property 'UserId' is required")]
-        [Column("user_id", TypeName = "integer")]
-        public int UserId { get; set; }
+    [Required(ErrorMessage = "Property 'UserId' is required")]
+    [Column("user_id", TypeName = "integer")]
+    public int UserId { get; set; }
 
-        [Column("is_online", TypeName = "boolean")]
-        public bool? IsOnline { get; set; }
+    [Column("is_online", TypeName = "boolean")]
+    public bool? IsOnline { get; set; }
 
-        [Column("insert_date", TypeName = "timestamp with time zone")]
-        public DateTime InsertDate { get; set; }
+    [Column("insert_date", TypeName = "timestamp with time zone")]
+    public DateTime InsertDate { get; set; }
 
-        [Column("online_app", TypeName = "integer")]
-        public int? OnlineApp { get; set; }
+    [Column("online_app", TypeName = "integer")]
+    public int? OnlineApp { get; set; }
 
-        [Column("is_online_mobile", TypeName = "boolean")]
-        public bool IsOnlineMobile { get; set; }
+    [Column("is_online_mobile", TypeName = "boolean")]
+    public bool IsOnlineMobile { get; set; }
 
-        [Column("last_seen", TypeName = "integer")]
-        public int LastSeen { get; set; }
-        [JsonIgnore]
-        public Func<ActivityLogItem> GetItemForSave => () => this;
-        [JsonIgnore]
-        public Func<ActivityLogItem, ActivityLogItem> GetItemForUpdate => (existingItem) => this;
+    [Column("last_seen", TypeName = "integer")]
+    public int LastSeen { get; set; }
+    [JsonIgnore]
+    public Func<ActivityLogItem> GetItemForSave => () => this;
+    [JsonIgnore]
+    public Func<ActivityLogItem, ActivityLogItem> GetItemForUpdate => (existingItem) => this;
 
 
-        public User User { get; set; }
-    }
+    public User User { get; set; }
 }

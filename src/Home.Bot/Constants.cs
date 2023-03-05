@@ -1,10 +1,9 @@
-﻿namespace Home.Bot
+﻿namespace Home.Bot;
+
+internal class Constants
 {
-    internal class Constants
-    {
-        public const string InactiveUsersInformer = nameof(InactiveUsersInformer);
-        public const string HardwareWarningsInformer = nameof(HardwareWarningsInformer);
-        public const string MemTotal = nameof(MemTotal);
-        public const string MemAvailable = nameof(MemAvailable);
-    }
+    public const string InactiveUsersInformer = nameof(InactiveUsersInformer);
+    public const string HardwareWarningsInformer = nameof(HardwareWarningsInformer);
+    public const string MemTotal = nameof(MemTotal);
+    public const string MemAvailable = nameof(MemAvailable);
 }

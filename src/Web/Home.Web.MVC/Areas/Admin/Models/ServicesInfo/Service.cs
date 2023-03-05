@@ -1,7 +1,6 @@
-﻿namespace Home.Web.Areas.Admin.Models.ServicesInfo
+﻿namespace Home.Web.Areas.Admin.Models.ServicesInfo;
+
+public class Service
 {
-    public class Service
-    {
-        public string Name { get; set; }
-    }
+    public string Name { get; set; }
 }

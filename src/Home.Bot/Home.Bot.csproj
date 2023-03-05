@@ -3,9 +3,10 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>disable</ImplicitUsings>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <PublishTrimmed>false</PublishTrimmed>
     <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     <UserSecretsId>b5476c67-808d-4a38-8c4d-351678fd82a5</UserSecretsId>
   </PropertyGroup>
@@ -22,7 +23,7 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="5.2.2" />
-    <PackageReference Include="Zs.Bot.Messenger.Telegram" Version="7.0.0" />
+    <PackageReference Include="Zs.Bot.Messenger.Telegram" Version="7.0.1" />
     <PackageReference Include="Zs.EspMeteo.Parser" Version="7.0.2" />
   </ItemGroup>
 

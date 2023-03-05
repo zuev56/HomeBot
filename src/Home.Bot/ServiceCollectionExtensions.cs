@@ -13,6 +13,7 @@ using Zs.Bot.Data.PostgreSQL;
 using Zs.Bot.Data.PostgreSQL.Repositories;
 using Zs.Bot.Data.Repositories;
 using Zs.Bot.Messenger.Telegram;
+using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Services.Logging.Seq;
@@ -77,16 +78,6 @@ internal static class ServiceCollectionExtensions
         return services;
     }
 
-    internal static IServiceCollection AddShellLauncher(this IServiceCollection services, IConfiguration configuration)
-    {
-        var bashPath = configuration["Bot:BashPath"];
-        var powerShellPath = configuration["Bot:PowerShellPath"];
-
-        services.AddScoped<IShellLauncher, ShellLauncher>(sp => new ShellLauncher(bashPath, powerShellPath));
-
-        return services;
-    }
-
     internal static IServiceCollection AddWeatherAnalyzer(this IServiceCollection services, IConfiguration configuration)
     {
         //services.Configure<EspMeteoOptions>(configuration.GetSection(EspMeteoOptions.SectionName));
@@ -102,6 +93,34 @@ internal static class ServiceCollectionExtensions
             var parser = provider.GetRequiredService<EspMeteoParser>();
             var logger = provider.GetRequiredService<ILogger<WeatherAnalyzer>>();
             return new WeatherAnalyzer(parser, options, logger);
+        });
+
+        return services;
+    }
+
+    internal static IServiceCollection AddCommandManager(this IServiceCollection services)
+    {
+
+        services.AddScoped<ICommandManager, CommandManager>(provider =>
+        {
+            var commandsRepository = provider.GetRequiredService<ICommandsRepository>();
+            var userRolesRepository = provider.GetRequiredService<IUserRolesRepository>();
+            var usersRepository = provider.GetRequiredService<IUsersRepository>();
+            var dbClient = provider.GetRequiredService<IDbClient>();
+            var configuration = provider.GetRequiredService<IConfiguration>();
+            var bashPath = configuration["Bot:BashPath"];
+            var powershellPath = configuration["Bot:PowerShellPath"];
+            var logger = provider.GetRequiredService<ILogger<CommandManager>>();
+
+            return new CommandManager(
+                commandsRepository,
+                userRolesRepository,
+                usersRepository,
+                dbClient,
+                bashPath,
+                powershellPath,
+                logger
+            );
         });
 
         return services;

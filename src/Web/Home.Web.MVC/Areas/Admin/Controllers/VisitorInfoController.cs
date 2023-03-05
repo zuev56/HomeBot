@@ -1,19 +1,18 @@
 ﻿using Home.Web.Areas.Admin.Models.VisitorInfo;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Home.Web.Areas.Admin.Controllers
-{
-    /// <summary>
-    /// Shows information about visitor
-    /// </summary>
-    [Area("admin")]
-    public class VisitorInfoController : Controller
-    {
-        public IActionResult Index()
-        {
-            var visitor = new Visitor(HttpContext);
+namespace Home.Web.Areas.Admin.Controllers;
 
-            return View(visitor);
-        }
+/// <summary>
+/// Shows information about visitor
+/// </summary>
+[Area("admin")]
+public class VisitorInfoController : Controller
+{
+    public IActionResult Index()
+    {
+        var visitor = new Visitor(HttpContext);
+
+        return View(visitor);
     }
 }

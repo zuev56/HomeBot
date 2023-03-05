@@ -1,32 +1,30 @@
 ﻿using Home.Web.Areas.Admin.Models.ServerInfo;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Home.Web.Areas.Admin.Controllers
+namespace Home.Web.Areas.Admin.Controllers;
+
+/// <summary>
+/// Shows general server status(errors, memory usage, etc.)
+/// </summary>
+[Area("admin")]
+[Route("admin/[controller]")] // Нужен для AJAX
+public class ServerInfoController : Controller
 {
+    private readonly Server _serverInfo = new Server();
 
-    /// <summary>
-    /// Shows general server status(errors, memory usage, etc.)
-    /// </summary>
-    [Area("admin")]
-    [Route("admin/[controller]")] // Нужен для AJAX
-    public class ServerInfoController : Controller
+    //[Route("")]
+    //[Route("index")]
+    ////[Route("admin/ServerInfo/index")]
+    //[Route("~/")]
+    public IActionResult Index()
     {
-        private readonly Server _serverInfo = new Server();
+        return View(_serverInfo);
+    }
 
-        //[Route("")]
-        //[Route("index")]
-        ////[Route("admin/ServerInfo/index")]
-        //[Route("~/")]
-        public IActionResult Index()
-        {
-            return View(_serverInfo);
-        }
-
-        //[HttpPost]
-        [Route("AjaxUpdateCommonInfo")]
-        public IActionResult AjaxUpdateCommonInfo()
-        {
-            return PartialView("_EnvironmentInfo", _serverInfo.EnvironmentInfo);
-        }
+    //[HttpPost]
+    [Route("AjaxUpdateCommonInfo")]
+    public IActionResult AjaxUpdateCommonInfo()
+    {
+        return PartialView("_EnvironmentInfo", _serverInfo.EnvironmentInfo);
     }
 }

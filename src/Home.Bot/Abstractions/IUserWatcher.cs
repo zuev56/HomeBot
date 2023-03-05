@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace Home.Bot.Abstractions
+namespace Home.Bot.Abstractions;
+
+internal interface IUserWatcher
 {
-    internal interface IUserWatcher
-    {
-        Task<string> DetectLongTimeInactiveUsersAsync();
-    }
+    Task<string> DetectLongTimeInactiveUsersAsync();
 }
