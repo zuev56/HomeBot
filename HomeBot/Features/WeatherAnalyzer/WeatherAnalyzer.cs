@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
+using Zs.Common.Services.Scheduling;
 using Zs.EspMeteo.Parser;
 using Zs.EspMeteo.Parser.Models;
 
@@ -19,14 +21,22 @@ internal sealed class WeatherAnalyzer
     private readonly TimeSpan _alarmInterval = 2.Hours();
     private DateTime? _lastAlarmDate = DateTime.UtcNow - 2.Hours();
 
+    public ProgramJob<string> Job { get; }
+
     public WeatherAnalyzer(
         EspMeteoParser espMeteoParser,
-        WeatherAnalyzerOptions weatherAnalyzerOptions,
+        IOptions<WeatherAnalyzerOptions> weatherAnalyzerOptions,
         ILogger<WeatherAnalyzer>? logger)
     {
         _espMeteoParser = espMeteoParser;
-        _weatherAnalyzerOptions = weatherAnalyzerOptions;
+        _weatherAnalyzerOptions = weatherAnalyzerOptions.Value;
         _logger = logger;
+
+        Job = new ProgramJob<string>(
+            period: 5.Minutes(),
+            method: AnalyzeAsync,
+            startUtcDate: DateTime.UtcNow + 10.Seconds()
+        );
     }
 
     public async Task<string> AnalyzeAsync()

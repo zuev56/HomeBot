@@ -1,11 +1,11 @@
 using System.Net.Http;
+using HomeBot.Features.HardwareMonitor;
 using HomeBot.Features.UserWatcher;
 using HomeBot.Features.WeatherAnalyzer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.PostgreSQL;
@@ -13,6 +13,7 @@ using Zs.Bot.Data.PostgreSQL.Repositories;
 using Zs.Bot.Data.Repositories;
 using Zs.Bot.Messenger.Telegram;
 using Zs.Bot.Services.Commands;
+using Zs.Bot.Services.DataSavers;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Services.Logging.Seq;
@@ -48,6 +49,7 @@ internal static class ServiceCollectionExtensions
 
         services.AddScoped<ITelegramBotClient>(_ => new TelegramBotClient(token, httpClient));
         services.AddScoped<IMessenger, TelegramMessenger>();
+        services.AddScoped<IMessageDataSaver, MessageDataDbSaver>();
 
         return services;
     }
@@ -80,13 +82,14 @@ internal static class ServiceCollectionExtensions
             .ValidateOnStart();
         services.AddSingleton<EspMeteoParser>();
 
-        services.AddSingleton<WeatherAnalyzer>(static provider =>
-        {
-            var options = provider.GetRequiredService<IOptions<WeatherAnalyzerOptions>>().Value;
-            var parser = provider.GetRequiredService<EspMeteoParser>();
-            var logger = provider.GetRequiredService<ILogger<WeatherAnalyzer>>();
-            return new WeatherAnalyzer(parser, options, logger);
-        });
+        services.AddSingleton<WeatherAnalyzer>();
+        //(static provider =>
+        //{
+        //    var options = provider.GetRequiredService<IOptions<WeatherAnalyzerOptions>>().Value;
+        //    var parser = provider.GetRequiredService<EspMeteoParser>();
+        //    var logger = provider.GetRequiredService<ILogger<WeatherAnalyzer>>();
+        //    return new WeatherAnalyzer(parser, options, logger);
+        //});
 
         return services;
     }
@@ -126,6 +129,18 @@ internal static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddSingleton<UserWatcher>();
+
+        return services;
+    }
+
+    internal static IServiceCollection AddHardwareMonitor(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<HardwareMonitorOptions>()
+            .Bind(configuration.GetSection(HardwareMonitorOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddScoped<HardwareMonitor, LinuxHardwareMonitor>();
 
         return services;
     }

@@ -21,14 +21,13 @@ using Zs.Common.Models;
 using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduling;
 using Zs.Common.Utilities;
-using static HomeBot.Features.HardwareMonitor.Constants;
 using static HomeBot.Features.UserWatcher.Constants;
 
 namespace HomeBot;
 
 internal sealed class HomeBot : IHostedService
 {
-    private readonly IHardwareMonitor _hardwareMonitor;
+    private readonly HardwareMonitor _hardwareMonitor;
     private readonly UserWatcher _userWatcher;
     private readonly IConfiguration _configuration;
     private readonly IMessenger _messenger;
@@ -44,7 +43,7 @@ internal sealed class HomeBot : IHostedService
         IMessenger messenger,
         IScheduler scheduler,
         IMessagesRepository messagesRepo,
-        IHardwareMonitor hardwareMonitor,
+        HardwareMonitor hardwareMonitor,
         UserWatcher userWatcher,
         IServiceProvider serviceProvider,
         WeatherAnalyzer weatherAnalyzer,
@@ -71,7 +70,7 @@ internal sealed class HomeBot : IHostedService
         {
             await InitializeDataBaseAsync();
 
-            await _hardwareMonitor.StartAsync(cancellationToken);
+            _hardwareMonitor.Start();
             _scheduler.Start(3.Seconds(), 1.Seconds());
 
             var startMessage = $"Bot '{nameof(HomeBot)}' started."
@@ -88,12 +87,14 @@ internal sealed class HomeBot : IHostedService
         }
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public Task StopAsync(CancellationToken cancellationToken)
     {
         _scheduler.Stop();
-        await _hardwareMonitor.StopAsync(cancellationToken);
+        _hardwareMonitor.Stop();
 
         _logger.LogInformation("Bot stopped");
+
+        return Task.CompletedTask;
     }
 
     private async Task InitializeDataBaseAsync()
@@ -110,20 +111,11 @@ internal sealed class HomeBot : IHostedService
         _userWatcher.Job.ExecutionCompleted += Job_ExecutionCompleted;
         _scheduler.Jobs.Add(_userWatcher.Job);
 
-        _scheduler.Jobs.AddRange(_hardwareMonitor.Jobs);
-        var hardwareMonitorInformerJob = (Job<string>)_scheduler.Jobs.Single(static j => j.Description == HardwareWarningsInformer);
-        hardwareMonitorInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
+        _hardwareMonitor.Job.ExecutionCompleted += Job_ExecutionCompleted;
+        _scheduler.Jobs.Add(_hardwareMonitor.Job);
 
-        if (true)
-        {
-            var analyzeWeatherJob = new ProgramJob<string>(
-                period: 10.Minutes(),
-                method: async () => await _weatherAnalyzer.AnalyzeAsync(),
-                startUtcDate: DateTime.UtcNow + 10.Seconds()
-            );
-            analyzeWeatherJob.ExecutionCompleted += Job_ExecutionCompleted;
-            _scheduler.Jobs.Add(analyzeWeatherJob);
-        }
+        _weatherAnalyzer.Job.ExecutionCompleted += Job_ExecutionCompleted;
+        _scheduler.Jobs.Add(_weatherAnalyzer.Job);
 
         if (_seqService != null)
         {
@@ -187,7 +179,7 @@ internal sealed class HomeBot : IHostedService
     {
         if (result?.Successful == false)
         {
-            _logger.LogWarning("Job \"{Job}\" execution failed. Resuob, IOperationRelt: {Result}", job.Description, result.Value);
+            _logger.LogWarning("Job \"{Job}\" execution failed", job.Description);
         }
 
         // On start

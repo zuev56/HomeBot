@@ -3,12 +3,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
-using HomeBot.Features.HardwareMonitor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Zs.Bot.Services.DataSavers;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Connection;
@@ -79,11 +77,10 @@ public static class Program
                     .AddDbClient(configuration)
                     .AddWeatherAnalyzer(configuration)
                     .AddCommandManager()
-                    .AddUserWatcher(configuration);
+                    .AddUserWatcher(configuration)
+                    .AddHardwareMonitor(configuration);
 
                 services.AddScoped<IScheduler, Scheduler>();
-                services.AddScoped<IMessageDataSaver, MessageDataDbSaver>();
-                services.AddScoped<IHardwareMonitor, ThinkPadX230HardwareMonitor>();
 
                 services.AddHostedService<HomeBot>();
             });
