@@ -1,2 +1,1 @@
-# Home
-Other pet-projects
+# HomeBot
