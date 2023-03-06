@@ -1,4 +1,5 @@
 using System.Net.Http;
+using HomeBot.Features.UserWatcher;
 using HomeBot.Features.WeatherAnalyzer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -92,7 +93,6 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddCommandManager(this IServiceCollection services)
     {
-
         services.AddScoped<ICommandManager, CommandManager>(provider =>
         {
             var commandsRepository = provider.GetRequiredService<ICommandsRepository>();
@@ -114,6 +114,18 @@ internal static class ServiceCollectionExtensions
                 logger
             );
         });
+
+        return services;
+    }
+
+    internal static IServiceCollection AddUserWatcher(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<UserWatcherOptions>()
+            .Bind(configuration.GetSection(UserWatcherOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddSingleton<UserWatcher>();
 
         return services;
     }

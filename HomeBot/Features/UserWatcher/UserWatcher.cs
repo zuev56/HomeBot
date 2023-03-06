@@ -1,47 +1,67 @@
 ﻿using System;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Zs.Common.Extensions;
 using Zs.Common.Services.Http;
+using Zs.Common.Services.Scheduling;
 
 namespace HomeBot.Features.UserWatcher;
 
-internal sealed class UserWatcher : IUserWatcher
+internal sealed class UserWatcher
 {
-    private readonly IConfiguration _configuration;
+    private readonly UserWatcherOptions _options;
+    public ProgramJob<string> Job { get; }
 
-    public UserWatcher(IConfiguration configuration)
+    public UserWatcher(IOptions<UserWatcherOptions> options, ILogger<UserWatcher> logger)
     {
-        _configuration = configuration;
+        _options = options.Value;
+
+        Job = new ProgramJob<string>(
+            period: 5.Minutes(),
+            method: DetectInactiveUsersAsync,
+            description: Constants.InactiveUsersInformer,
+            startUtcDate: DateTime.UtcNow + 5.Seconds(),
+            logger: logger);
     }
 
-    public async Task<string> DetectLongTimeInactiveUsersAsync(TimeSpan inactiveTime)
+    public async Task<string> DetectInactiveUsersAsync()
     {
-        var trackedUserIds = _configuration.GetSection("Home:Vk:TrackedUserIds").Get<int[]>()!;
-        var baseUrl = _configuration["Home:Vk:VkActivityApiUrl"];
-
         var result = new StringBuilder();
-        foreach (var userId in trackedUserIds)
+        foreach (var userId in _options.TrackedIds)
         {
-            var getActivityUrl = $"{baseUrl}/api/activity/{userId}/last-utc";
-            var lastSeen = await Request.GetAsync<DateTime>(getActivityUrl);
-            var interval = DateTime.UtcNow - lastSeen;
-            if (interval < inactiveTime)
+            var inactiveTime = await GetInactiveTimeAsync(userId);
+            if (inactiveTime < _options.InactiveHoursLimit.Hours())
             {
                 continue;
             }
 
-            var getUserUrl = $"{baseUrl}/api/users/{userId}";
-            var user = await Request.GetAsync<User>(getUserUrl, throwExceptionOnError: true);
+            var user = await GetUserAsync(userId);
             if (user == null)
             {
                 continue;
             }
 
             var userName = $"{user.FirstName} {user.LastName}";
-            result.AppendLine($"User {userName} is not active for {interval:hh\\:mm\\:ss}");
+            result.AppendLine($"User {userName} is not active for {inactiveTime:hh\\:mm\\:ss}");
         }
 
         return result.ToString().Trim();
+    }
+
+    private async Task<User?> GetUserAsync(int userId)
+    {
+        var getUserUrl = $"{_options.VkActivityApiUri}/api/users/{userId}";
+        var user = await Request.GetAsync<User>(getUserUrl, throwExceptionOnError: true);
+        return user;
+    }
+
+    private async Task<TimeSpan> GetInactiveTimeAsync(int userId)
+    {
+        var getActivityUrl = $"{_options.VkActivityApiUri}/api/activity/{userId}/last-utc";
+        var lastSeen = await Request.GetAsync<DateTime>(getActivityUrl);
+        var inactiveTime = DateTime.UtcNow - lastSeen;
+        return inactiveTime;
     }
 }

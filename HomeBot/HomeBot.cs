@@ -21,13 +21,15 @@ using Zs.Common.Models;
 using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduling;
 using Zs.Common.Utilities;
+using static HomeBot.Features.HardwareMonitor.Constants;
+using static HomeBot.Features.UserWatcher.Constants;
 
 namespace HomeBot;
 
 internal sealed class HomeBot : IHostedService
 {
     private readonly IHardwareMonitor _hardwareMonitor;
-    private readonly IUserWatcher _userWatcher;
+    private readonly UserWatcher _userWatcher;
     private readonly IConfiguration _configuration;
     private readonly IMessenger _messenger;
     private readonly IScheduler _scheduler;
@@ -43,7 +45,7 @@ internal sealed class HomeBot : IHostedService
         IScheduler scheduler,
         IMessagesRepository messagesRepo,
         IHardwareMonitor hardwareMonitor,
-        IUserWatcher userWatcher,
+        UserWatcher userWatcher,
         IServiceProvider serviceProvider,
         WeatherAnalyzer weatherAnalyzer,
         ILogger<HomeBot> logger,
@@ -105,20 +107,11 @@ internal sealed class HomeBot : IHostedService
 
     private void CreateJobs()
     {
+        _userWatcher.Job.ExecutionCompleted += Job_ExecutionCompleted;
+        _scheduler.Jobs.Add(_userWatcher.Job);
+
         _scheduler.Jobs.AddRange(_hardwareMonitor.Jobs);
-
-        var inactiveTime = _configuration.GetValue<int>("Home:Vk:InactiveHoursLimit").Hours();
-        var inactiveUsersInformerJob = new ProgramJob<string>(
-            period: 5.Minutes(),
-            method: () => _userWatcher.DetectLongTimeInactiveUsersAsync(inactiveTime),
-            description: Constants.InactiveUsersInformer,
-            startUtcDate: DateTime.UtcNow + 5.Seconds(),
-            logger: _logger);
-
-        inactiveUsersInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
-        _scheduler.Jobs.Add(inactiveUsersInformerJob);
-
-        var hardwareMonitorInformerJob = (Job<string>)_scheduler.Jobs.Single(static j => j.Description == Constants.HardwareWarningsInformer);
+        var hardwareMonitorInformerJob = (Job<string>)_scheduler.Jobs.Single(static j => j.Description == HardwareWarningsInformer);
         hardwareMonitorInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
 
         if (true)
@@ -211,7 +204,7 @@ internal sealed class HomeBot : IHostedService
             {
                 var preparedMessage = result.Value.ReplaceEndingWithThreeDots(4000);
 
-                if (job.Description == Constants.InactiveUsersInformer)
+                if (job.Description == InactiveUsersInformer)
                 {
                     var todaysAlerts = await _messagesRepo.FindAllTodayMessagesWithTextAsync("is not active for");
 

@@ -4,7 +4,6 @@ using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using HomeBot.Features.HardwareMonitor;
-using HomeBot.Features.UserWatcher;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -79,12 +78,12 @@ public static class Program
                     .AddSeq(configuration)
                     .AddDbClient(configuration)
                     .AddWeatherAnalyzer(configuration)
-                    .AddCommandManager();
+                    .AddCommandManager()
+                    .AddUserWatcher(configuration);
 
                 services.AddScoped<IScheduler, Scheduler>();
                 services.AddScoped<IMessageDataSaver, MessageDataDbSaver>();
                 services.AddScoped<IHardwareMonitor, ThinkPadX230HardwareMonitor>();
-                services.AddScoped<IUserWatcher, UserWatcher>();
 
                 services.AddHostedService<HomeBot>();
             });
