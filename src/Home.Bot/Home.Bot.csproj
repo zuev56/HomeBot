@@ -23,18 +23,23 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="5.2.2" />
+    <PackageReference Include="Zs.Bot.Data.PostgreSQL" Version="7.0.0" />
     <PackageReference Include="Zs.Bot.Messenger.Telegram" Version="7.0.1" />
     <PackageReference Include="Zs.EspMeteo.Parser" Version="7.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Home.Services\Home.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\SQL\ForeignTales.sql" />
+    <EmbeddedResource Include="Data\SQL\Indexes.sql" />
+    <EmbeddedResource Include="Data\SQL\Priveleges.sql" />
+    <EmbeddedResource Include="Data\SQL\StoredFunctions.sql" />
+    <EmbeddedResource Include="Data\SQL\Views.sql" />
   </ItemGroup>
 
 </Project>

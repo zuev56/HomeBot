@@ -1,7 +1,7 @@
 using System.Net.Http;
+using Home.Bot.Data;
 using Home.Bot.Models;
 using Home.Bot.Services;
-using Home.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +17,6 @@ using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Abstractions;
 using Zs.Common.Services.Logging.Seq;
-using Zs.Common.Services.Shell;
 using Zs.EspMeteo.Parser;
 
 namespace Home.Bot;

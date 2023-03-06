@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Home.Bot.Abstractions;
-using Home.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Home.Bot.Data;
 using Home.Bot.Services;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Enums;

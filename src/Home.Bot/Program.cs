@@ -9,7 +9,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.DataSavers;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;

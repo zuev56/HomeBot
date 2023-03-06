@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "pgsql1": {
-      "type": "pgsql",
-      "connectionId": "Default"
-    }
-  }
-}
