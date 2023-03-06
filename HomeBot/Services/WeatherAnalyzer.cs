@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Home.Bot.Models;
+using HomeBot.Models;
 using Microsoft.Extensions.Logging;
 using Zs.Common.Extensions;
 using Zs.EspMeteo.Parser;
 using Zs.EspMeteo.Parser.Models;
 
-namespace Home.Bot.Services;
+namespace HomeBot.Services;
 
 internal sealed class WeatherAnalyzer
 {

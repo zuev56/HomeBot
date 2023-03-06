@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Home.Bot.Models;
+namespace HomeBot.Models;
 
 public sealed class UserDto
 {

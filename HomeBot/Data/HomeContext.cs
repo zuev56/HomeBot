@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Zs.Common.Extensions;
 
-namespace Home.Bot.Data;
+namespace HomeBot.Data;
 
 public partial class HomeContext : DbContext
 {

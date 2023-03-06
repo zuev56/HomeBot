@@ -1,4 +1,4 @@
-﻿namespace Home.Bot;
+﻿namespace HomeBot;
 
 internal class Constants
 {

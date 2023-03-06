@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using Home.Bot.Abstractions;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
+using HomeBot.Abstractions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
 using Zs.Common.Services.Scheduling;
 using Zs.Common.Services.Shell;
 
-namespace Home.Bot.Services;
+namespace HomeBot.Services;
 
 public sealed class ThinkPadX230HardwareMonitor : IHardwareMonitor
 {

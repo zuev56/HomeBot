@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Zs.Common.Services.Scheduling;
 
-namespace Home.Bot.Abstractions;
+namespace HomeBot.Abstractions;
 
 internal interface IHardwareMonitor
 {

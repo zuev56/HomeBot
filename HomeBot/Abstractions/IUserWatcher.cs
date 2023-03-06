@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Home.Bot.Abstractions;
+namespace HomeBot.Abstractions;
 
 internal interface IUserWatcher
 {

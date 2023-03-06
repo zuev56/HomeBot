@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Text;
 using System.Threading.Tasks;
-using Home.Bot.Abstractions;
-using Home.Bot.Models;
+using HomeBot.Abstractions;
+using HomeBot.Models;
 using Microsoft.Extensions.Configuration;
 using Zs.Common.Services.Http;
 
-namespace Home.Bot.Services;
+namespace HomeBot.Services;
 
 internal class UserWatcher : IUserWatcher
 {

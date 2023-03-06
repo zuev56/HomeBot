@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using Home.Bot.Abstractions;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Home.Bot.Data;
-using Home.Bot.Services;
+using HomeBot.Abstractions;
+using HomeBot.Data;
+using HomeBot.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Enums;
 using Zs.Bot.Services.Messaging;
@@ -21,7 +21,7 @@ using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduling;
 using Zs.Common.Utilities;
 
-namespace Home.Bot;
+namespace HomeBot;
 
 internal sealed class HomeBot : IHostedService
 {

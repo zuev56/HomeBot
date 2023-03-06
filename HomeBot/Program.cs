@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
-using Home.Bot.Abstractions;
-using Home.Bot.Services;
+using HomeBot.Abstractions;
+using HomeBot.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,7 +15,7 @@ using Zs.Common.Extensions;
 using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduling;
 
-namespace Home.Bot;
+namespace HomeBot;
 
 public sealed class Program
 {

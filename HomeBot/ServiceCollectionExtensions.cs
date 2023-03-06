@@ -1,7 +1,7 @@
 using System.Net.Http;
-using Home.Bot.Data;
-using Home.Bot.Models;
-using Home.Bot.Services;
+using HomeBot.Data;
+using HomeBot.Models;
+using HomeBot.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +19,7 @@ using Zs.Common.Abstractions;
 using Zs.Common.Services.Logging.Seq;
 using Zs.EspMeteo.Parser;
 
-namespace Home.Bot;
+namespace HomeBot;
 
 internal static class ServiceCollectionExtensions
 {

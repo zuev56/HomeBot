@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
-namespace Home.Bot.Data;
+namespace HomeBot.Data;
 
 public class HomeContextFactory : IDbContextFactory<HomeContext>, IDesignTimeDbContextFactory<HomeContext>
 {
