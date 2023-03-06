@@ -1,6 +1,6 @@
-﻿namespace HomeBot;
+﻿namespace HomeBot.Features.HardwareMonitor;
 
-internal class Constants
+internal static class Constants
 {
     public const string InactiveUsersInformer = nameof(InactiveUsersInformer);
     public const string HardwareWarningsInformer = nameof(HardwareWarningsInformer);

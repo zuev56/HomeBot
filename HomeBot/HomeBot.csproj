@@ -34,12 +34,4 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Data\SQL\ForeignTales.sql" />
-    <EmbeddedResource Include="Data\SQL\Indexes.sql" />
-    <EmbeddedResource Include="Data\SQL\Priveleges.sql" />
-    <EmbeddedResource Include="Data\SQL\StoredFunctions.sql" />
-    <EmbeddedResource Include="Data\SQL\Views.sql" />
-  </ItemGroup>
-
 </Project>

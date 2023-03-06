@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace HomeBot.Models;
+namespace HomeBot.Features.UserWatcher;
 
-public sealed class UserDto
+internal sealed class User
 {
     [JsonPropertyName("id")]
     public int Id { get; set; }

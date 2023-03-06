@@ -3,14 +3,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Zs.Common.Services.Scheduling;
 
-namespace HomeBot.Abstractions;
+namespace HomeBot.Features.HardwareMonitor;
 
 internal interface IHardwareMonitor
 {
     public IReadOnlyCollection<JobBase> Jobs { get; }
 
-    Task<float> Get15minAvgCpuUsage();
-    Task<float> Get5minAvgCpuUsage();
+    Task<float> Get15MinAvgCpuUsage();
+    Task<float> Get5MinAvgCpuUsage();
     Task<float> GetCpuTemperature();
     Task<float> GetCpuUsage();
     Task<double> GetMemoryUsagePercent();

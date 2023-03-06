@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
-using HomeBot.Abstractions;
-using HomeBot.Services;
+using HomeBot.Features.HardwareMonitor;
+using HomeBot.Features.UserWatcher;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -17,7 +17,7 @@ using Zs.Common.Services.Scheduling;
 
 namespace HomeBot;
 
-public sealed class Program
+public static class Program
 {
     public static async Task Main(string[] args)
     {
@@ -49,21 +49,12 @@ public sealed class Program
         var appsettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
 
         if (!File.Exists(appsettingsPath))
+        {
             throw new AppsettingsNotFoundException();
+        }
 
         var configuration = new ConfigurationManager();
         configuration.AddJsonFile(appsettingsPath, optional: false, reloadOnChange: true);
-
-        // foreach (var arg in args)
-        // {
-        //     if (!File.Exists(arg))
-        //         throw new FileNotFoundException($"Wrong configuration path:\n{arg}");
-        //
-        //     configuration.AddJsonFile(arg, optional: true, reloadOnChange: true);
-        // }
-        //
-        // if (configuration["SecretsPath"] != null)
-        //     configuration.AddJsonFile(configuration["SecretsPath"]);
 
         return configuration;
     }
@@ -77,7 +68,7 @@ public sealed class Program
         return Host.CreateDefaultBuilder(args)
             .ConfigureAppConfiguration((_, configurationBuilder) => configurationBuilder.AddConfiguration(CreateConfiguration(args)))
             .UseSerilog()
-            .ConfigureServices((hostContext, services) =>
+            .ConfigureServices(static (hostContext, services) =>
             {
                 var configuration = hostContext.Configuration;
 

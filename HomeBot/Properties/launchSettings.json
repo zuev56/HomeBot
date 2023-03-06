@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Zs.Service.Home.Bot": {
+    "HomeBot": {
       "commandName": "Project"
     }
   }

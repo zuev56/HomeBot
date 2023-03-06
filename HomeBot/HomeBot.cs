@@ -5,15 +5,16 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using HomeBot.Abstractions;
-using HomeBot.Data;
-using HomeBot.Services;
+using HomeBot.Features.HardwareMonitor;
+using HomeBot.Features.UserWatcher;
+using HomeBot.Features.WeatherAnalyzer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Enums;
+using Zs.Bot.Data.PostgreSQL;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
@@ -97,7 +98,7 @@ internal sealed class HomeBot : IHostedService
     {
         using var scope = _serviceProvider.CreateScope();
         var scopedServices = scope.ServiceProvider;
-        var db = scopedServices.GetRequiredService<HomeContext>();
+        var db = scopedServices.GetRequiredService<PostgreSqlBotContext>();
 
         await db.Database.EnsureCreatedAsync();
     }
@@ -106,9 +107,10 @@ internal sealed class HomeBot : IHostedService
     {
         _scheduler.Jobs.AddRange(_hardwareMonitor.Jobs);
 
+        var inactiveTime = _configuration.GetValue<int>("Home:Vk:InactiveHoursLimit").Hours();
         var inactiveUsersInformerJob = new ProgramJob<string>(
             period: 5.Minutes(),
-            method: _userWatcher.DetectLongTimeInactiveUsersAsync,
+            method: () => _userWatcher.DetectLongTimeInactiveUsersAsync(inactiveTime),
             description: Constants.InactiveUsersInformer,
             startUtcDate: DateTime.UtcNow + 5.Seconds(),
             logger: _logger);
@@ -188,7 +190,7 @@ internal sealed class HomeBot : IHostedService
 
 
 
-    private async void Job_ExecutionCompleted(Job<string> job, Result<string> result)
+    private async void Job_ExecutionCompleted(Job<string> job, Result<string>? result)
     {
         if (result?.Successful == false)
         {
@@ -226,7 +228,7 @@ internal sealed class HomeBot : IHostedService
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Job's ExecutionCompleted handler error", result);
+            _logger.LogError(ex, "Job's ExecutionCompleted handler error", result);
         }
     }
 }

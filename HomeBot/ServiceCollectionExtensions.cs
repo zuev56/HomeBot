@@ -1,7 +1,5 @@
 using System.Net.Http;
-using HomeBot.Data;
-using HomeBot.Models;
-using HomeBot.Services;
+using HomeBot.Features.WeatherAnalyzer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,13 +24,9 @@ internal static class ServiceCollectionExtensions
     internal static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration["ConnectionStrings:Default"];
-
-        services.AddDbContext<HomeContext>(options => options.UseNpgsql(connectionString));
-
         services.AddDbContext<PostgreSqlBotContext>(options => options.UseNpgsql(connectionString));
 
         // For repositories
-        services.AddScoped<IDbContextFactory<HomeContext>, HomeContextFactory>();
         services.AddScoped<IDbContextFactory<PostgreSqlBotContext>, PostgreSqlBotContextFactory>();
 
         services.AddScoped<ICommandsRepository, CommandsRepository<PostgreSqlBotContext>>();
@@ -69,7 +63,7 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddDbClient(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration["ConnectionStrings:Default"];
+        var connectionString = configuration["ConnectionStrings:Default"]!;
 
         services.AddScoped<IDbClient, DbClient>(sp =>
             new DbClient(connectionString, sp.GetService<ILogger<DbClient>>()));
@@ -79,7 +73,6 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddWeatherAnalyzer(this IServiceCollection services, IConfiguration configuration)
     {
-        //services.Configure<EspMeteoOptions>(configuration.GetSection(EspMeteoOptions.SectionName));
         services.AddOptions<WeatherAnalyzerOptions>()
             .Bind(configuration.GetSection(WeatherAnalyzerOptions.SectionName))
             .ValidateDataAnnotations()

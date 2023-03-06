@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
-using HomeBot.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Zs.Common.Exceptions;
@@ -14,7 +13,7 @@ using Zs.Common.Models;
 using Zs.Common.Services.Scheduling;
 using Zs.Common.Services.Shell;
 
-namespace HomeBot.Services;
+namespace HomeBot.Features.HardwareMonitor;
 
 public sealed class ThinkPadX230HardwareMonitor : IHardwareMonitor
 {
@@ -90,9 +89,9 @@ public sealed class ThinkPadX230HardwareMonitor : IHardwareMonitor
 
         //_logger.LogTrace("Bash command result: {Result}", commandResult.ToJSON());
 
-        var jsonNode = JsonNode.Parse(commandResult.Value);
+        var jsonNode = JsonNode.Parse(commandResult.Value)!;
 
-        return jsonNode["coretemp-isa-0000"]["Package id 0"]["temp1_input"].GetValue<float>();
+        return jsonNode["coretemp-isa-0000"]!["Package id 0"]!["temp1_input"]!.GetValue<float>();
     }
 
     public async Task<double> GetMemoryUsagePercent()
@@ -117,8 +116,8 @@ public sealed class ThinkPadX230HardwareMonitor : IHardwareMonitor
 
         var memUsage = commandResult.Value
             .Split("kB", StringSplitOptions.RemoveEmptyEntries)
-            .Where(row => !string.IsNullOrWhiteSpace(row.Trim()))
-            .Select(row => {
+            .Where(static row => !string.IsNullOrWhiteSpace(row.Trim()))
+            .Select(static row => {
                 var cells = row.Split(':');
                 return new
                 {
@@ -136,9 +135,9 @@ public sealed class ThinkPadX230HardwareMonitor : IHardwareMonitor
 
     public async Task<float> GetCpuUsage() => (await HtopCpuUsage())[0];
 
-    public async Task<float> Get5minAvgCpuUsage() => (await HtopCpuUsage())[1];
+    public async Task<float> Get5MinAvgCpuUsage() => (await HtopCpuUsage())[1];
 
-    public async Task<float> Get15minAvgCpuUsage() => (await HtopCpuUsage())[2];
+    public async Task<float> Get15MinAvgCpuUsage() => (await HtopCpuUsage())[2];
 
     private async Task<float[]> HtopCpuUsage()
     {
@@ -205,7 +204,7 @@ public sealed class ThinkPadX230HardwareMonitor : IHardwareMonitor
     {
         try
         {
-            var cpuUsage = await Get15minAvgCpuUsage();
+            var cpuUsage = await Get15MinAvgCpuUsage();
 
             _logger.LogDebug("CPU usage {CpuUsage}", cpuUsage);
 
@@ -219,5 +218,4 @@ public sealed class ThinkPadX230HardwareMonitor : IHardwareMonitor
             return Result.Fail<string>(Fault.Unknown.WithMessage($"Unable to get CPU usage: {ex.Message}"));
         }
     }
-
 }
