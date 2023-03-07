@@ -60,9 +60,8 @@ public abstract class HardwareMonitor
             ? analyzeMemoryUsage.Result.Value
             : analyzeMemoryUsage.Result.Fault!.Message;
 
-        var newLine = Environment.NewLine;
-        var analyzeResult = cpuTemperatureInfo + newLine + newLine
-                            + cpuUsageInfo + newLine + newLine
+        var analyzeResult = cpuTemperatureInfo + Environment.NewLine
+                            + cpuUsageInfo + Environment.NewLine
                             + memoryUsageInfo;
 
         return analyzeResult;

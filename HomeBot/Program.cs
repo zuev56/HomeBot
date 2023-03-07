@@ -21,7 +21,7 @@ public static class Program
         try
         {
             Log.Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(CreateConfiguration(args), "Serilog")
+                .ReadFrom.Configuration(CreateConfiguration(), "Serilog")
                 .CreateLogger();
 
             Log.Warning("-! Starting {ProcessName} (MachineName: {MachineName}, OS: {OS}, User: {User}, ProcessId: {ProcessId})",
@@ -41,7 +41,7 @@ public static class Program
         }
     }
 
-    private static IConfiguration CreateConfiguration(string[] args)
+    private static IConfiguration CreateConfiguration()
     {
         var appsettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
 
@@ -80,6 +80,11 @@ public static class Program
                     .AddHardwareMonitor(configuration);
 
                 services.AddScoped<IScheduler, Scheduler>();
+                
+                services.AddOptions<NotifierOptions>()
+                    .Bind(configuration.GetSection(NotifierOptions.SectionName))
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
 
                 services.AddHostedService<HomeBot>();
             });

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Http;
 using Zs.Common.Services.Scheduling;
+using static HomeBot.Features.UserWatcher.Constants;
 
 namespace HomeBot.Features.UserWatcher;
 
@@ -21,7 +22,7 @@ internal sealed class UserWatcher
         Job = new ProgramJob<string>(
             period: 5.Minutes(),
             method: DetectInactiveUsersAsync,
-            description: Constants.InactiveUsersInformer,
+            description: InactiveUsersInformer,
             startUtcDate: DateTime.UtcNow + 5.Seconds(),
             logger: logger);
     }

@@ -7,10 +7,10 @@ using HomeBot.Features.HardwareMonitor;
 using HomeBot.Features.Seq;
 using HomeBot.Features.UserWatcher;
 using HomeBot.Features.WeatherAnalyzer;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.Enums;
 using Zs.Bot.Data.PostgreSQL;
@@ -27,7 +27,7 @@ internal sealed class HomeBot : IHostedService
 {
     private readonly HardwareMonitor _hardwareMonitor;
     private readonly UserWatcher _userWatcher;
-    private readonly IConfiguration _configuration;
+    private readonly NotifierOptions _notifierOptions;
     private readonly IMessenger _messenger;
     private readonly IScheduler _scheduler;
     private readonly IMessagesRepository _messagesRepo;
@@ -37,7 +37,6 @@ internal sealed class HomeBot : IHostedService
     private readonly ILogger<HomeBot> _logger;
 
     public HomeBot(
-        IConfiguration configuration,
         IMessenger messenger,
         IScheduler scheduler,
         IMessagesRepository messagesRepo,
@@ -46,9 +45,9 @@ internal sealed class HomeBot : IHostedService
         IServiceProvider serviceProvider,
         WeatherAnalyzer weatherAnalyzer,
         SeqEventsInformer seqEventsInformer,
+        IOptions<NotifierOptions> notifierOptions,
         ILogger<HomeBot> logger)
     {
-        _configuration = configuration;
         _messenger = messenger;
         _scheduler = scheduler;
         _messagesRepo = messagesRepo;
@@ -57,6 +56,7 @@ internal sealed class HomeBot : IHostedService
         _serviceProvider = serviceProvider;
         _weatherAnalyzer = weatherAnalyzer;
         _seqEventsInformer = seqEventsInformer;
+        _notifierOptions = notifierOptions.Value;
         _logger = logger;
 
         CreateJobs();
@@ -130,45 +130,50 @@ internal sealed class HomeBot : IHostedService
         _scheduler.Jobs.Add(logProcessStateInfo);
     }
 
-    private async void Job_ExecutionCompleted(Job<string> job, Result<string>? result)
+    private async void Job_ExecutionCompleted(Job<string> job, Result<string> result)
     {
-        if (result?.Successful == false)
-        {
-            _logger.LogWarning("Job \"{Job}\" execution failed", job.Description);
-        }
-
-        // On start
-        if (result == null)
-        {
-            return;
-        }
-
         try
         {
-            if (result.Successful && !string.IsNullOrWhiteSpace(result.Value)
-                                  && DateTime.Now.Hour >= _configuration.GetValue<int>("Notifier:Time:FromHour")
-                                  && DateTime.Now.Hour < _configuration.GetValue<int>("Notifier:Time:ToHour"))
+            if (result.Successful == false)
             {
-                var preparedMessage = result.Value.ReplaceEndingWithThreeDots(4000);
-
-                if (job.Description == InactiveUsersInformer)
-                {
-                    var todaysAlerts = await _messagesRepo.FindAllTodayMessagesWithTextAsync("is not active for");
-
-                    if (!todaysAlerts.Any(m => m.Text?.WithoutDigits() == preparedMessage.WithoutDigits()))
-                    {
-                        await _messenger.AddMessageToOutboxAsync(preparedMessage, Role.Owner, Role.Admin);
-                    }
-                }
-                else
-                {
-                    await _messenger.AddMessageToOutboxAsync(preparedMessage, Role.Owner, Role.Admin);
-                }
+                _logger.LogWarning("Job \"{Job}\" execution failed {FaultCode}, {FaultMessage}", job.Description, result.Fault!.Code, result.Fault!.Message);
+                return;
             }
+
+            var curHour = DateTime.Now.Hour;
+            if (string.IsNullOrWhiteSpace(result.Value) || curHour < _notifierOptions.FromHour || curHour >= _notifierOptions.ToHour)
+            {
+                return;
+            }
+
+            await NotifyAsync(job, result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Job's ExecutionCompleted handler error", result);
+            _logger.LogError(ex, "Job's ExecutionCompleted handler error");
+        }
+    }
+
+    private async Task NotifyAsync(Job<string> job, Result<string> result)
+    {
+        var preparedMessage = result.Value.ReplaceEndingWithThreeDots(4000);
+
+        if (job.Description == InactiveUsersInformer)
+        {
+            await NotifyAboutInactiveUsersAsync(preparedMessage);
+        }
+        else
+        {
+            await _messenger.AddMessageToOutboxAsync(preparedMessage, Role.Owner, Role.Admin);
+        }
+    }
+
+    private async Task NotifyAboutInactiveUsersAsync(string preparedMessage)
+    {
+        var todayAlerts = await _messagesRepo.FindAllTodayMessagesWithTextAsync("is not active for");
+        if (todayAlerts.All(m => m.Text?.WithoutDigits() != preparedMessage.WithoutDigits()))
+        {
+            await _messenger.AddMessageToOutboxAsync(preparedMessage, Role.Owner, Role.Admin);
         }
     }
 }
