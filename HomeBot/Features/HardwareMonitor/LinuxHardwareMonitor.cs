@@ -25,7 +25,8 @@ public sealed class LinuxHardwareMonitor : HardwareMonitor
     protected override async Task<float> GetCpuTemperature()
     {
         // sudo apt install lm-sensors
-        var commandResult = await ShellLauncher.RunAsync(Options.ShellPath, "sensors -j");
+        const string getSensorsInfoCommand = "sensors -j";
+        var commandResult = await ShellLauncher.RunAsync(Options.ShellPath, getSensorsInfoCommand);
 
         EnsureResultSuccessful(commandResult);
 
@@ -35,7 +36,8 @@ public sealed class LinuxHardwareMonitor : HardwareMonitor
 
     protected override async Task<double> GetMemoryUsagePercent()
     {
-        var commandResult = await ShellLauncher.RunAsync(Options.ShellPath, "egrep 'Mem|Cache|Swap' /proc/meminfo");
+        const string getMemoryUsageCommand = "egrep 'Mem|Cache|Swap' /proc/meminfo";
+        var commandResult = await ShellLauncher.RunAsync(Options.ShellPath, getMemoryUsageCommand);
         // Approximate result:
         // MemTotal:       16067104 kB
         // MemAvailable:   12935852 kB
@@ -64,18 +66,15 @@ public sealed class LinuxHardwareMonitor : HardwareMonitor
 
     protected override async Task<float> Get15MinAvgCpuUsage()
     {
-        var commandResult = await ShellLauncher.RunAsync(Options.ShellPath, "cat /proc/loadavg | awk '{print $1\"-\"$2\"-\"$3}'");
-        // Approximate result: 0.07-0.06-0.01
+        const string get15MinCpuUsageCommand = "cat /proc/loadavg | awk '{print $3}'";
+        var commandResult = await ShellLauncher.RunAsync(Options.ShellPath, get15MinCpuUsageCommand);
 
         EnsureResultSuccessful(commandResult);
 
-        return commandResult.Value
-            .Split('-')
-            .Select(static i => float.Parse(i, CultureInfo.InvariantCulture))
-            .ToArray()[2];
+        return float.Parse(commandResult.Value, CultureInfo.InvariantCulture);
     }
 
-    private void EnsureResultSuccessful(Result<string> result)
+    private static void EnsureResultSuccessful(Result<string> result)
     {
         if (!result.Successful)
         {
