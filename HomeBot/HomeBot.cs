@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HomeBot.Features.HardwareMonitor;
+using HomeBot.Features.Seq;
 using HomeBot.Features.UserWatcher;
 using HomeBot.Features.WeatherAnalyzer;
 using Microsoft.Extensions.Configuration;
@@ -18,7 +17,6 @@ using Zs.Bot.Data.PostgreSQL;
 using Zs.Bot.Services.Messaging;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
-using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduling;
 using Zs.Common.Utilities;
 using static HomeBot.Features.UserWatcher.Constants;
@@ -34,7 +32,7 @@ internal sealed class HomeBot : IHostedService
     private readonly IScheduler _scheduler;
     private readonly IMessagesRepository _messagesRepo;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ISeqService? _seqService;
+    private readonly SeqEventsInformer _seqEventsInformer;
     private readonly WeatherAnalyzer _weatherAnalyzer;
     private readonly ILogger<HomeBot> _logger;
 
@@ -47,8 +45,8 @@ internal sealed class HomeBot : IHostedService
         UserWatcher userWatcher,
         IServiceProvider serviceProvider,
         WeatherAnalyzer weatherAnalyzer,
-        ILogger<HomeBot> logger,
-        ISeqService? seqService = null)
+        SeqEventsInformer seqEventsInformer,
+        ILogger<HomeBot> logger)
     {
         _configuration = configuration;
         _messenger = messenger;
@@ -58,8 +56,8 @@ internal sealed class HomeBot : IHostedService
         _userWatcher = userWatcher;
         _serviceProvider = serviceProvider;
         _weatherAnalyzer = weatherAnalyzer;
+        _seqEventsInformer = seqEventsInformer;
         _logger = logger;
-        _seqService = seqService;
 
         CreateJobs();
     }
@@ -73,7 +71,7 @@ internal sealed class HomeBot : IHostedService
             _hardwareMonitor.Start();
             _scheduler.Start(3.Seconds(), 1.Seconds());
 
-            var startMessage = $"Bot '{nameof(HomeBot)}' started."
+            var startMessage = $"{nameof(HomeBot)} started."
                                + Environment.NewLine + Environment.NewLine
                                + RuntimeInformationWrapper.GetRuntimeInfo();
             await _messenger.AddMessageToOutboxAsync(startMessage, Role.Owner, Role.Admin);
@@ -117,26 +115,11 @@ internal sealed class HomeBot : IHostedService
         _weatherAnalyzer.Job.ExecutionCompleted += Job_ExecutionCompleted;
         _scheduler.Jobs.Add(_weatherAnalyzer.Job);
 
-        if (_seqService != null)
-        {
-            var dayErrorsAndWarningsInformer = new ProgramJob<string>(
-                period: 1.Hours(),
-                method: () => GetSeqEventsAsync(DateTime.UtcNow - 1.Hours()),
-                startUtcDate: DateTime.UtcNow.NextHour(),
-                description: "dayErrorsAndWarningsInformer"
-            );
-            dayErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
-            _scheduler.Jobs.Add(dayErrorsAndWarningsInformer);
+        _seqEventsInformer.DayEventsInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
+        _scheduler.Jobs.Add(_seqEventsInformer.DayEventsInformerJob);
 
-            var nightErrorsAndWarningsInformer = new ProgramJob<string>(
-                period: 1.Days(),
-                method: () => GetSeqEventsAsync(DateTime.UtcNow - 12.Hours()),
-                startUtcDate: DateTime.UtcNow.Date + (24 + 10).Hours(),
-                description: "nightErrorsAndWarningsInformer"
-            );
-            nightErrorsAndWarningsInformer.ExecutionCompleted += Job_ExecutionCompleted;
-            _scheduler.Jobs.Add(nightErrorsAndWarningsInformer);
-        }
+        _seqEventsInformer.NightEventsInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
+        _scheduler.Jobs.Add(_seqEventsInformer.NightEventsInformerJob);
 
         var logProcessStateInfo = new ProgramJob(
             period: 1.Days(),
@@ -146,34 +129,6 @@ internal sealed class HomeBot : IHostedService
         );
         _scheduler.Jobs.Add(logProcessStateInfo);
     }
-
-    private async Task<string> GetSeqEventsAsync(DateTime fromDate)
-    {
-        var events = await _seqService?.GetLastEventsAsync(fromDate, 10, _configuration.GetSection("Seq:ObservedSignals").Get<int[]>());
-        return events.Count > 0
-            ? string.Join(Environment.NewLine + Environment.NewLine, events)
-            : string.Empty;
-    }
-
-    private string CreateMessageFromSeqEvents(List<SeqEvent> events)
-    {
-        var sb = new StringBuilder();
-
-        foreach (var seqEvent in events)
-        {
-            sb.AppendFormat("[{0}]: ", seqEvent.Level.ToUpperInvariant()).Append(seqEvent.Date.AddHours(3)).AppendLine(); // Utc to Gmt+3
-            sb.Append("Data:").AppendLine();
-            seqEvent.Properties.ForEach(p => sb.Append("  • ").Append(p.ReplaceEndingWithThreeDots(150)).AppendLine());
-            sb.Append("Messages:").AppendLine();
-            seqEvent.Messages.ForEach(m => sb.Append("  • ").Append(m.ReplaceEndingWithThreeDots(300)).AppendLine());
-            sb.Append(_seqService.Url).Append('/').Append(seqEvent.LinkPart.Substring(0, seqEvent.LinkPart.IndexOf('{'))).Append("?render");
-            sb.AppendLine().AppendLine();
-        }
-
-        return sb.ToString();
-    }
-
-
 
     private async void Job_ExecutionCompleted(Job<string> job, Result<string>? result)
     {

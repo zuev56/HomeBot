@@ -63,7 +63,6 @@ public static class Program
         CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
         return Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration((_, configurationBuilder) => configurationBuilder.AddConfiguration(CreateConfiguration(args)))
             .UseSerilog()
             .ConfigureServices(static (hostContext, services) =>
             {

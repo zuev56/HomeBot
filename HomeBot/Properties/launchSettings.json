@@ -1,7 +1,10 @@
 {
   "profiles": {
     "HomeBot": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Production"//"Development"
+      }
     }
   }
 }

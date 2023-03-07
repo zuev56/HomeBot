@@ -1,11 +1,13 @@
 using System.Net.Http;
 using HomeBot.Features.HardwareMonitor;
+using HomeBot.Features.Seq;
 using HomeBot.Features.UserWatcher;
 using HomeBot.Features.WeatherAnalyzer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.PostgreSQL;
@@ -40,11 +42,9 @@ internal static class ServiceCollectionExtensions
         return services;
     }
 
-    // TODO: move to Zs.Common.Services
-
     internal static IServiceCollection AddTelegramBot(this IServiceCollection services, IConfiguration configuration)
     {
-        var token = configuration["Bot:Token"];
+        var token = configuration["Bot:Token"]!;
         var httpClient = new HttpClient();
 
         services.AddScoped<ITelegramBotClient>(_ => new TelegramBotClient(token, httpClient));
@@ -56,10 +56,20 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddSeq(this IServiceCollection services, IConfiguration configuration)
     {
-        var url = configuration["Seq:ServerUrl"];
-        var token = configuration["Seq:ApiToken"];
+        services.AddOptions<SeqOptions>()
+            .Bind(configuration.GetSection(SeqOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-        services.AddScoped<ISeqService, SeqService>(_ => new SeqService(url, token));
+        services.AddSingleton<ISeqService, SeqService>(static provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<SeqOptions>>().Value;
+            var logger = provider.GetRequiredService<ILogger<SeqService>>();
+
+            return new SeqService(options.Url, options.Token, logger);
+        });
+
+        services.AddSingleton<SeqEventsInformer>();
 
         return services;
     }
@@ -83,13 +93,6 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<EspMeteoParser>();
 
         services.AddSingleton<WeatherAnalyzer>();
-        //(static provider =>
-        //{
-        //    var options = provider.GetRequiredService<IOptions<WeatherAnalyzerOptions>>().Value;
-        //    var parser = provider.GetRequiredService<EspMeteoParser>();
-        //    var logger = provider.GetRequiredService<ILogger<WeatherAnalyzer>>();
-        //    return new WeatherAnalyzer(parser, options, logger);
-        //});
 
         return services;
     }
