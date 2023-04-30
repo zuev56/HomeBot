@@ -77,14 +77,11 @@ public static class Program
                     .AddWeatherAnalyzer(configuration)
                     .AddCommandManager()
                     .AddUserWatcher(configuration)
-                    .AddHardwareMonitor(configuration);
+                    .AddHardwareMonitor(configuration)
+                    .AddNotifier(configuration);
 
                 services.AddScoped<IScheduler, Scheduler>();
-                
-                services.AddOptions<NotifierOptions>()
-                    .Bind(configuration.GetSection(NotifierOptions.SectionName))
-                    .ValidateDataAnnotations()
-                    .ValidateOnStart();
+
 
                 services.AddHostedService<HomeBot>();
             });

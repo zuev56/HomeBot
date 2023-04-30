@@ -1,5 +1,6 @@
 using System.Net.Http;
 using HomeBot.Features.HardwareMonitor;
+using HomeBot.Features.Notification;
 using HomeBot.Features.Seq;
 using HomeBot.Features.UserWatcher;
 using HomeBot.Features.WeatherAnalyzer;
@@ -144,6 +145,18 @@ internal static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddScoped<HardwareMonitor, LinuxHardwareMonitor>();
+
+        return services;
+    }
+
+    internal static IServiceCollection AddNotifier(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<NotifierOptions>()
+            .Bind(configuration.GetSection(NotifierOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddScoped<Notifier>();
 
         return services;
     }

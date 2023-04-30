@@ -1,62 +1,51 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using HomeBot.Features.HardwareMonitor;
+using HomeBot.Features.Notification;
 using HomeBot.Features.Seq;
 using HomeBot.Features.UserWatcher;
 using HomeBot.Features.WeatherAnalyzer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Zs.Bot.Data.Abstractions;
-using Zs.Bot.Data.Enums;
 using Zs.Bot.Data.PostgreSQL;
-using Zs.Bot.Services.Messaging;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
 using Zs.Common.Services.Scheduling;
 using Zs.Common.Utilities;
-using static HomeBot.Features.UserWatcher.Constants;
 
 namespace HomeBot;
 
 internal sealed class HomeBot : IHostedService
 {
+    private readonly IScheduler _scheduler;
     private readonly HardwareMonitor _hardwareMonitor;
     private readonly UserWatcher _userWatcher;
-    private readonly NotifierOptions _notifierOptions;
-    private readonly IMessenger _messenger;
-    private readonly IScheduler _scheduler;
-    private readonly IMessagesRepository _messagesRepo;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly SeqEventsInformer _seqEventsInformer;
     private readonly WeatherAnalyzer _weatherAnalyzer;
+    private readonly SeqEventsInformer _seqEventsInformer;
+    private readonly Notifier _notifier;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<HomeBot> _logger;
 
     public HomeBot(
-        IMessenger messenger,
         IScheduler scheduler,
-        IMessagesRepository messagesRepo,
         HardwareMonitor hardwareMonitor,
         UserWatcher userWatcher,
-        IServiceProvider serviceProvider,
         WeatherAnalyzer weatherAnalyzer,
         SeqEventsInformer seqEventsInformer,
-        IOptions<NotifierOptions> notifierOptions,
+        Notifier notifier,
+        IServiceProvider serviceProvider,
         ILogger<HomeBot> logger)
     {
-        _messenger = messenger;
         _scheduler = scheduler;
-        _messagesRepo = messagesRepo;
         _hardwareMonitor = hardwareMonitor;
         _userWatcher = userWatcher;
-        _serviceProvider = serviceProvider;
         _weatherAnalyzer = weatherAnalyzer;
         _seqEventsInformer = seqEventsInformer;
-        _notifierOptions = notifierOptions.Value;
+        _notifier = notifier;
+        _serviceProvider = serviceProvider;
         _logger = logger;
 
         CreateJobs();
@@ -74,7 +63,7 @@ internal sealed class HomeBot : IHostedService
             var startMessage = $"{nameof(HomeBot)} started."
                                + Environment.NewLine + Environment.NewLine
                                + RuntimeInformationWrapper.GetRuntimeInfo();
-            await _messenger.AddMessageToOutboxAsync(startMessage, Role.Owner, Role.Admin);
+            await _notifier.NotifyAsync(startMessage);
 
             _logger.LogInformation(startMessage);
         }
@@ -140,40 +129,11 @@ internal sealed class HomeBot : IHostedService
                 return;
             }
 
-            var curHour = DateTime.Now.Hour;
-            if (string.IsNullOrWhiteSpace(result.Value) || curHour < _notifierOptions.FromHour || curHour >= _notifierOptions.ToHour)
-            {
-                return;
-            }
-
-            await NotifyAsync(job, result);
+            await _notifier.NotifyAsync(job.Description, result.Value);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Job's ExecutionCompleted handler error");
-        }
-    }
-
-    private async Task NotifyAsync(Job<string> job, Result<string> result)
-    {
-        var preparedMessage = result.Value.ReplaceEndingWithThreeDots(4000);
-
-        if (job.Description == InactiveUsersInformer)
-        {
-            await NotifyAboutInactiveUsersAsync(preparedMessage);
-        }
-        else
-        {
-            await _messenger.AddMessageToOutboxAsync(preparedMessage, Role.Owner, Role.Admin);
-        }
-    }
-
-    private async Task NotifyAboutInactiveUsersAsync(string preparedMessage)
-    {
-        var todayAlerts = await _messagesRepo.FindAllTodayMessagesWithTextAsync("is not active for");
-        if (todayAlerts.All(m => m.Text?.WithoutDigits() != preparedMessage.WithoutDigits()))
-        {
-            await _messenger.AddMessageToOutboxAsync(preparedMessage, Role.Owner, Role.Admin);
         }
     }
 }
