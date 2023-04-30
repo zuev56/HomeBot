@@ -95,20 +95,12 @@ internal sealed class HomeBot : IHostedService
 
     private void CreateJobs()
     {
-        _userWatcher.Job.ExecutionCompleted += Job_ExecutionCompleted;
         _scheduler.Jobs.Add(_userWatcher.Job);
-
-        _hardwareMonitor.Job.ExecutionCompleted += Job_ExecutionCompleted;
         _scheduler.Jobs.Add(_hardwareMonitor.Job);
-
-        _weatherAnalyzer.Job.ExecutionCompleted += Job_ExecutionCompleted;
         _scheduler.Jobs.Add(_weatherAnalyzer.Job);
-
-        _seqEventsInformer.DayEventsInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
         _scheduler.Jobs.Add(_seqEventsInformer.DayEventsInformerJob);
-
-        _seqEventsInformer.NightEventsInformerJob.ExecutionCompleted += Job_ExecutionCompleted;
         _scheduler.Jobs.Add(_seqEventsInformer.NightEventsInformerJob);
+        _scheduler.SetDefaultExecutionCompletedHandler<string>(Job_ExecutionCompleted);
 
         var logProcessStateInfo = new ProgramJob(
             period: 1.Days(),
