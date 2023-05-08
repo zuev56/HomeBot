@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace HomeBot.Features.UserWatcher;
+namespace HomeBot.Features.VkUsers;
 
 internal sealed class User
 {

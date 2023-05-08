@@ -78,10 +78,8 @@ public static class Program
                     .AddCommandManager()
                     .AddUserWatcher(configuration)
                     .AddHardwareMonitor(configuration)
-                    .AddNotifier(configuration);
-
-                services.AddScoped<IScheduler, Scheduler>();
-
+                    .AddInteractionServices(configuration)
+                    .AddSingleton<IScheduler, Scheduler>();
 
                 services.AddHostedService<HomeBot>();
             });

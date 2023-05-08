@@ -1,9 +1,9 @@
 using System.Net.Http;
-using HomeBot.Features.HardwareMonitor;
-using HomeBot.Features.Notification;
+using HomeBot.Features.Hardware;
+using HomeBot.Features.Interaction;
 using HomeBot.Features.Seq;
-using HomeBot.Features.UserWatcher;
-using HomeBot.Features.WeatherAnalyzer;
+using HomeBot.Features.VkUsers;
+using HomeBot.Features.Weather;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,16 +29,13 @@ internal static class ServiceCollectionExtensions
     internal static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration["ConnectionStrings:Default"];
-        services.AddDbContext<PostgreSqlBotContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContextFactory<PostgreSqlBotContext>(options => options.UseNpgsql(connectionString));
 
-        // For repositories
-        services.AddScoped<IDbContextFactory<PostgreSqlBotContext>, PostgreSqlBotContextFactory>();
-
-        services.AddScoped<ICommandsRepository, CommandsRepository<PostgreSqlBotContext>>();
-        services.AddScoped<IUserRolesRepository, UserRolesRepository<PostgreSqlBotContext>>();
-        services.AddScoped<IChatsRepository, ChatsRepository<PostgreSqlBotContext>>();
-        services.AddScoped<IUsersRepository, UsersRepository<PostgreSqlBotContext>>();
-        services.AddScoped<IMessagesRepository, MessagesRepository<PostgreSqlBotContext>>();
+        services.AddSingleton<ICommandsRepository, CommandsRepository<PostgreSqlBotContext>>();
+        services.AddSingleton<IUserRolesRepository, UserRolesRepository<PostgreSqlBotContext>>();
+        services.AddSingleton<IChatsRepository, ChatsRepository<PostgreSqlBotContext>>();
+        services.AddSingleton<IUsersRepository, UsersRepository<PostgreSqlBotContext>>();
+        services.AddSingleton<IMessagesRepository, MessagesRepository<PostgreSqlBotContext>>();
 
         return services;
     }
@@ -47,10 +44,11 @@ internal static class ServiceCollectionExtensions
     {
         var token = configuration["Bot:Token"]!;
         var httpClient = new HttpClient();
+        var telegramBotClient = new TelegramBotClient(token, httpClient);
 
-        services.AddScoped<ITelegramBotClient>(_ => new TelegramBotClient(token, httpClient));
-        services.AddScoped<IMessenger, TelegramMessenger>();
-        services.AddScoped<IMessageDataSaver, MessageDataDbSaver>();
+        services.AddSingleton<ITelegramBotClient>(telegramBotClient);
+        services.AddSingleton<IMessenger, TelegramMessenger>();
+        services.AddSingleton<IMessageDataSaver, MessageDataDbSaver>();
 
         return services;
     }
@@ -79,7 +77,7 @@ internal static class ServiceCollectionExtensions
     {
         var connectionString = configuration["ConnectionStrings:Default"]!;
 
-        services.AddScoped<IDbClient, DbClient>(sp =>
+        services.AddSingleton<IDbClient, DbClient>(sp =>
             new DbClient(connectionString, sp.GetService<ILogger<DbClient>>()));
 
         return services;
@@ -100,7 +98,7 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddCommandManager(this IServiceCollection services)
     {
-        services.AddScoped<ICommandManager, CommandManager>(provider =>
+        services.AddSingleton<ICommandManager, CommandManager>(provider =>
         {
             var commandsRepository = provider.GetRequiredService<ICommandsRepository>();
             var userRolesRepository = provider.GetRequiredService<IUserRolesRepository>();
@@ -144,19 +142,21 @@ internal static class ServiceCollectionExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        services.AddScoped<HardwareMonitor, LinuxHardwareMonitor>();
+        services.AddSingleton<HardwareMonitor, LinuxHardwareMonitor>();
 
         return services;
     }
 
-    internal static IServiceCollection AddNotifier(this IServiceCollection services, IConfiguration configuration)
+    internal static IServiceCollection AddInteractionServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<NotifierOptions>()
             .Bind(configuration.GetSection(NotifierOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        services.AddScoped<Notifier>();
+        services.AddSingleton<Notifier>();
+        services.AddSingleton<SystemStatusService>();
+        services.AddSingleton<Manager>();
 
         return services;
     }

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace HomeBot.Features.HardwareMonitor;
+namespace HomeBot.Features.Hardware;
 
 public sealed class HardwareMonitorOptions
 {

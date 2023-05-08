@@ -2,11 +2,11 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using HomeBot.Features.HardwareMonitor;
-using HomeBot.Features.Notification;
+using HomeBot.Features.Hardware;
+using HomeBot.Features.Interaction;
 using HomeBot.Features.Seq;
-using HomeBot.Features.UserWatcher;
-using HomeBot.Features.WeatherAnalyzer;
+using HomeBot.Features.VkUsers;
+using HomeBot.Features.Weather;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -15,6 +15,7 @@ using Zs.Common.Extensions;
 using Zs.Common.Models;
 using Zs.Common.Services.Scheduling;
 using Zs.Common.Utilities;
+using static HomeBot.Features.VkUsers.Constants;
 
 namespace HomeBot;
 
@@ -37,7 +38,9 @@ internal sealed class HomeBot : IHostedService
         SeqEventsInformer seqEventsInformer,
         Notifier notifier,
         IServiceProvider serviceProvider,
-        ILogger<HomeBot> logger)
+        ILogger<HomeBot> logger,
+        // Костыль - нужно просто создать инстанс
+        Manager manager)
     {
         _scheduler = scheduler;
         _hardwareMonitor = hardwareMonitor;
@@ -56,14 +59,12 @@ internal sealed class HomeBot : IHostedService
         try
         {
             await InitializeDataBaseAsync();
-
-            _hardwareMonitor.Start();
             _scheduler.Start(3.Seconds(), 1.Seconds());
 
             var startMessage = $"{nameof(HomeBot)} started."
                                + Environment.NewLine + Environment.NewLine
                                + RuntimeInformationWrapper.GetRuntimeInfo();
-            await _notifier.NotifyAsync(startMessage);
+            await _notifier.ForceNotifyAsync(startMessage);
 
             _logger.LogInformation(startMessage);
         }
@@ -77,8 +78,6 @@ internal sealed class HomeBot : IHostedService
     public Task StopAsync(CancellationToken cancellationToken)
     {
         _scheduler.Stop();
-        _hardwareMonitor.Stop();
-
         _logger.LogInformation("Bot stopped");
 
         return Task.CompletedTask;
@@ -121,7 +120,14 @@ internal sealed class HomeBot : IHostedService
                 return;
             }
 
-            await _notifier.NotifyAsync(job.Description, result.Value);
+            if (job.Description == InactiveUsersInformer)
+            {
+                await _notifier.NotifyOnceADayAsync(result.Value, "is not active for");
+            }
+            else
+            {
+                await _notifier.NotifyAsync(result.Value);
+            }
         }
         catch (Exception ex)
         {

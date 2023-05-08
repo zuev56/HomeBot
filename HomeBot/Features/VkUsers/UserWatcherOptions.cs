@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace HomeBot.Features.UserWatcher;
+namespace HomeBot.Features.VkUsers;
 
 public sealed class UserWatcherOptions
 {

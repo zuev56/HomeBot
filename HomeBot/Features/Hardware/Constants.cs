@@ -1,4 +1,4 @@
-﻿namespace HomeBot.Features.HardwareMonitor;
+﻿namespace HomeBot.Features.Hardware;
 
 internal static class Constants
 {

@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace HomeBot.Features.WeatherAnalyzer;
+namespace HomeBot.Features.Weather;
 
 public sealed class WeatherAnalyzerOptions
 {

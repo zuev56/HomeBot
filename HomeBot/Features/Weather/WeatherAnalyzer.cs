@@ -10,14 +10,13 @@ using Zs.Common.Services.Scheduling;
 using Zs.EspMeteo.Parser;
 using Zs.EspMeteo.Parser.Models;
 
-namespace HomeBot.Features.WeatherAnalyzer;
+namespace HomeBot.Features.Weather;
 
 internal sealed class WeatherAnalyzer
 {
     private readonly EspMeteoParser _espMeteoParser;
     private readonly WeatherAnalyzerOptions _weatherAnalyzerOptions;
     private readonly ILogger<WeatherAnalyzer>? _logger;
-
     private readonly TimeSpan _alarmInterval = 2.Hours();
     private DateTime? _lastAlarmDate = DateTime.UtcNow - 2.Hours();
 
@@ -39,7 +38,7 @@ internal sealed class WeatherAnalyzer
         );
     }
 
-    public async Task<string> AnalyzeAsync()
+    private async Task<string> AnalyzeAsync()
     {
         // Временный костыль
         if (DateTime.UtcNow < _lastAlarmDate + _alarmInterval)
@@ -125,5 +124,16 @@ internal sealed class WeatherAnalyzer
 
         var result = deviations.ToString();
         return result == espMeteoDeviceName ? string.Empty : result;
+    }
+
+    public async Task<string> GetCurrentStateAsync()
+    {
+        var espMeteoInfos = await GetEspMeteoInfosAsync();
+        var state = espMeteoInfos.SelectMany(
+            static device => device.Sensors.SelectMany(
+                static sensor => sensor.Parameters.Select(
+                    parameter => $"[{sensor.Name}].{parameter.Name}: {parameter.Value}")));
+
+        return string.Join(Environment.NewLine, state);
     }
 }

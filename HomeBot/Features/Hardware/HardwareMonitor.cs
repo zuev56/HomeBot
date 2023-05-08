@@ -6,7 +6,7 @@ using Zs.Common.Extensions;
 using Zs.Common.Models;
 using Zs.Common.Services.Scheduling;
 
-namespace HomeBot.Features.HardwareMonitor;
+namespace HomeBot.Features.Hardware;
 
 public abstract class HardwareMonitor
 {
@@ -23,26 +23,16 @@ public abstract class HardwareMonitor
         Logger = logger;
         Job = new ProgramJob<string>(
             period: TimeSpan.FromMinutes(5),
-            method: GetHardwareAnalyzeResults,
+            method: GetHardwareAnalyzeResultsAsync,
             startUtcDate: DateTime.UtcNow + TimeSpan.FromSeconds(5),
             description: Constants.HardwareWarningsInformer);
-    }
-
-    public void Start()
-    {
-        Logger.LogInformationIfNeed($"{nameof(HardwareMonitor)} started");
-    }
-
-    public void Stop()
-    {
-        Logger.LogInformationIfNeed($"{nameof(HardwareMonitor)} stopped");
     }
 
     protected abstract Task<float> GetCpuTemperature();
     protected abstract Task<float> Get15MinAvgCpuUsage();
     protected abstract Task<double> GetMemoryUsagePercent();
 
-    private async Task<string> GetHardwareAnalyzeResults()
+    private async Task<string> GetHardwareAnalyzeResultsAsync()
     {
         var analyzeCpuTemperature = AnalyzeCpuTemperature();
         var analyzeCpuUsage = AnalyzeCpuUsage();
@@ -123,4 +113,6 @@ public abstract class HardwareMonitor
             return Result.Fail<string>(Fault.Unknown.WithMessage($"Unable to get CPU usage: {ex.Message}"));
         }
     }
+
+    public async Task<string> GetCurrentStateAsync() => await GetHardwareAnalyzeResultsAsync();
 }

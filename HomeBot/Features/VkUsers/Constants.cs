@@ -1,4 +1,4 @@
-﻿namespace HomeBot.Features.UserWatcher;
+﻿namespace HomeBot.Features.VkUsers;
 
 internal static class Constants
 {

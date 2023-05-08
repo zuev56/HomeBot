@@ -9,9 +9,9 @@ using Zs.Common.Exceptions;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
 using Zs.Common.Services.Shell;
-using static HomeBot.Features.HardwareMonitor.Constants;
+using static HomeBot.Features.Hardware.Constants;
 
-namespace HomeBot.Features.HardwareMonitor;
+namespace HomeBot.Features.Hardware;
 
 public sealed class LinuxHardwareMonitor : HardwareMonitor
 {

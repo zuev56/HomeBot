@@ -6,9 +6,9 @@ using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Http;
 using Zs.Common.Services.Scheduling;
-using static HomeBot.Features.UserWatcher.Constants;
+using static HomeBot.Features.VkUsers.Constants;
 
-namespace HomeBot.Features.UserWatcher;
+namespace HomeBot.Features.VkUsers;
 
 internal sealed class UserWatcher
 {
@@ -27,7 +27,7 @@ internal sealed class UserWatcher
             logger: logger);
     }
 
-    public async Task<string> DetectInactiveUsersAsync()
+    private async Task<string> DetectInactiveUsersAsync()
     {
         var result = new StringBuilder();
         foreach (var userId in _options.TrackedIds)
@@ -64,5 +64,19 @@ internal sealed class UserWatcher
         var lastSeen = await Request.GetAsync<DateTime>(getActivityUrl);
         var inactiveTime = DateTime.UtcNow - lastSeen;
         return inactiveTime;
+    }
+
+    public async Task<string> GetCurrentStateAsync()
+    {
+        var result = new StringBuilder();
+        foreach (var userId in _options.TrackedIds)
+        {
+            var inactiveTime = await GetInactiveTimeAsync(userId);
+            var user = await GetUserAsync(userId);
+            var userName = $"{user!.FirstName} {user.LastName}";
+            result.AppendLine($"User {userName} is not active for {inactiveTime:hh\\:mm\\:ss}");
+        }
+
+        return result.ToString().Trim();
     }
 }

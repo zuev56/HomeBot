@@ -3,7 +3,7 @@
     "HomeBot": {
       "commandName": "Project",
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Production"//"Development"
+        "DOTNET_ENVIRONMENT": "Development"
       }
     }
   }
