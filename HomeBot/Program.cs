@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
+using HomeBot.Features.Interaction;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -82,6 +83,8 @@ public static class Program
                     .AddSingleton<IScheduler, Scheduler>();
 
                 services.AddHostedService<HomeBot>();
+
+                ActivatorUtilities.CreateInstance<MessageHandler>(services.BuildServiceProvider());
             });
     }
 

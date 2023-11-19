@@ -38,9 +38,7 @@ internal sealed class HomeBot : IHostedService
         SeqEventsInformer seqEventsInformer,
         Notifier notifier,
         IServiceProvider serviceProvider,
-        ILogger<HomeBot> logger,
-        // Костыль - нужно просто создать инстанс
-        Manager manager)
+        ILogger<HomeBot> logger)
     {
         _scheduler = scheduler;
         _hardwareMonitor = hardwareMonitor;

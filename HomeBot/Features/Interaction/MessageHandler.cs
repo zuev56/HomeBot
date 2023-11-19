@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.Messaging;
@@ -7,13 +6,13 @@ using static HomeBot.Features.Interaction.Commands;
 
 namespace HomeBot.Features.Interaction;
 
-internal sealed class Manager
+internal sealed class MessageHandler
 {
     private readonly IMessenger _messenger;
     private readonly Notifier _notifier;
     private readonly SystemStatusService _systemStatusService;
 
-    public Manager(IMessenger messenger, Notifier notifier, SystemStatusService systemStatusService)
+    public MessageHandler(IMessenger messenger, Notifier notifier, SystemStatusService systemStatusService)
     {
         _messenger = messenger;
         _notifier = notifier;
@@ -27,11 +26,7 @@ internal sealed class Manager
 
         var message = e.Message!.Text?.Trim().ToLower() ?? string.Empty;
         if (!BotCommand.IsCommand(message))
-        {
             return;
-        }
-
-        Debug.WriteLine($"Messenger_MessageReceived: '{message}'");
 
         if (new[] { FullStatus, WeatherStatus, HardwareStatus, UserStatus }.Contains(message))
         {
@@ -47,8 +42,6 @@ internal sealed class Manager
             };
 
             await _notifier.ForceNotifyAsync(response);
-
-            Debug.WriteLine($"Messenger_MessageReceived: Message handled");
         }
     }
 }

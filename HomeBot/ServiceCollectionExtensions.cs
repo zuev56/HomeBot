@@ -156,7 +156,6 @@ internal static class ServiceCollectionExtensions
 
         services.AddSingleton<Notifier>();
         services.AddSingleton<SystemStatusService>();
-        services.AddSingleton<Manager>();
 
         return services;
     }
