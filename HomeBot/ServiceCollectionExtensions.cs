@@ -1,6 +1,7 @@
 using System.Net.Http;
 using HomeBot.Features.Hardware;
 using HomeBot.Features.Interaction;
+using HomeBot.Features.Ping;
 using HomeBot.Features.Seq;
 using HomeBot.Features.VkUsers;
 using HomeBot.Features.Weather;
@@ -159,4 +160,17 @@ internal static class ServiceCollectionExtensions
 
         return services;
     }
+
+    internal static IServiceCollection AddPingChecker(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<PingCheckerOptions>()
+            .Bind(configuration.GetSection(PingCheckerOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddSingleton<PingChecker>();
+
+        return services;
+    }
+
 }

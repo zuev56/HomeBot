@@ -80,6 +80,7 @@ public static class Program
                     .AddUserWatcher(configuration)
                     .AddHardwareMonitor(configuration)
                     .AddInteractionServices(configuration)
+                    .AddPingChecker(configuration)
                     .AddSingleton<IScheduler, Scheduler>();
 
                 services.AddHostedService<HomeBot>();

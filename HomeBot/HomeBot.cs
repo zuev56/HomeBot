@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HomeBot.Features.Hardware;
 using HomeBot.Features.Interaction;
+using HomeBot.Features.Ping;
 using HomeBot.Features.Seq;
 using HomeBot.Features.VkUsers;
 using HomeBot.Features.Weather;
@@ -27,6 +28,7 @@ internal sealed class HomeBot : IHostedService
     private readonly WeatherAnalyzer _weatherAnalyzer;
     private readonly SeqEventsInformer _seqEventsInformer;
     private readonly Notifier _notifier;
+    private readonly PingChecker _pingChecker;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<HomeBot> _logger;
 
@@ -37,6 +39,7 @@ internal sealed class HomeBot : IHostedService
         WeatherAnalyzer weatherAnalyzer,
         SeqEventsInformer seqEventsInformer,
         Notifier notifier,
+        PingChecker pingChecker,
         IServiceProvider serviceProvider,
         ILogger<HomeBot> logger)
     {
@@ -46,6 +49,7 @@ internal sealed class HomeBot : IHostedService
         _weatherAnalyzer = weatherAnalyzer;
         _seqEventsInformer = seqEventsInformer;
         _notifier = notifier;
+        _pingChecker = pingChecker;
         _serviceProvider = serviceProvider;
         _logger = logger;
 
@@ -97,15 +101,20 @@ internal sealed class HomeBot : IHostedService
         _scheduler.Jobs.Add(_weatherAnalyzer.Job);
         _scheduler.Jobs.Add(_seqEventsInformer.DayEventsInformerJob);
         _scheduler.Jobs.Add(_seqEventsInformer.NightEventsInformerJob);
+        _scheduler.Jobs.Add(_pingChecker.Job);
+        _scheduler.Jobs.Add(LogProcessStateJob());
         _scheduler.SetDefaultExecutionCompletedHandler<string>(Job_ExecutionCompleted);
+    }
 
+    private ProgramJob LogProcessStateJob()
+    {
         var logProcessStateInfo = new ProgramJob(
             period: 1.Days(),
             method: () => Task.Run(() => _logger.LogProcessState(Process.GetCurrentProcess())),
             startUtcDate: DateTime.UtcNow + 1.Minutes(),
             description: "logProcessStateInfo"
         );
-        _scheduler.Jobs.Add(logProcessStateInfo);
+        return logProcessStateInfo;
     }
 
     private async void Job_ExecutionCompleted(Job<string> job, Result<string> result)
