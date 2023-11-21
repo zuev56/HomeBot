@@ -47,7 +47,7 @@ internal sealed class WeatherAnalyzer
         }
 
         var espMeteoInfos = await GetEspMeteoInfosAsync();
-        var deviations = GetDeviationsInfo(espMeteoInfos).Trim();
+        var deviations = GetDeviationInfos(espMeteoInfos).Trim();
 
         // Временный костыль
         if (!string.IsNullOrEmpty(deviations))
@@ -68,7 +68,7 @@ internal sealed class WeatherAnalyzer
         return espMeteos;
     }
 
-    private string GetDeviationsInfo(IEnumerable<EspMeteo> espMeteoInfos)
+    private string GetDeviationInfos(IEnumerable<EspMeteo> espMeteoInfos)
     {
         var deviations = new StringBuilder();
         foreach (var espMeteoInfo in espMeteoInfos)
