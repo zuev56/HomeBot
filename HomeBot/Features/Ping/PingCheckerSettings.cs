@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HomeBot.Features.Ping;
 
-public sealed class PingCheckerOptions
+public sealed class PingCheckerSettings
 {
     public const string SectionName = "PingChecker";
 

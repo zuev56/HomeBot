@@ -3,31 +3,31 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HomeBot.Features.Weather;
 
-public sealed class WeatherAnalyzerOptions
+internal sealed class WeatherAnalyzerSettings
 {
     public const string SectionName = "WeatherAnalyzer";
     [Required]
-    public DeviceOptions[] Devices { get; init; } = Array.Empty<DeviceOptions>();
+    public DeviceSettings[] Devices { get; init; } = Array.Empty<DeviceSettings>();
 }
 
-public sealed class DeviceOptions
+internal sealed class DeviceSettings
 {
     [Required, Url]
     public string Uri { get; init; } = null!;
     [Required]
-    public SensorOptions[] Sensors { get; init; } = Array.Empty<SensorOptions>();
+    public SensorSettings[] Sensors { get; init; } = Array.Empty<SensorSettings>();
     public string? Name { get; init; }
 }
 
-public sealed class SensorOptions
+internal sealed class SensorSettings
 {
     [Required]
     public string Name { get; init; } = null!;
     [Required]
-    public ParameterOptions[] Parameters { get; init; } = Array.Empty<ParameterOptions>();
+    public ParameterSettings[] Parameters { get; init; } = Array.Empty<ParameterSettings>();
 }
 
-public sealed class ParameterOptions
+internal sealed class ParameterSettings
 {
     [Required]
     public string Name { get; init; } = null!;

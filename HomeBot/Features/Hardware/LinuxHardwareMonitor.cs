@@ -16,7 +16,7 @@ namespace HomeBot.Features.Hardware;
 public sealed class LinuxHardwareMonitor : HardwareMonitor
 {
     public LinuxHardwareMonitor(
-        IOptions<HardwareMonitorOptions> options,
+        IOptions<HardwareMonitorSettings> options,
         ILogger<LinuxHardwareMonitor> logger)
         : base(options, logger)
     {

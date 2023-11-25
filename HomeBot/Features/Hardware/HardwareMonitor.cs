@@ -10,13 +10,13 @@ namespace HomeBot.Features.Hardware;
 
 public abstract class HardwareMonitor
 {
-    protected readonly HardwareMonitorOptions Options;
+    protected readonly HardwareMonitorSettings Options;
     protected readonly ILogger<HardwareMonitor> Logger;
 
     public ProgramJob<string> Job { get; }
 
     protected HardwareMonitor(
-        IOptions<HardwareMonitorOptions> options,
+        IOptions<HardwareMonitorSettings> options,
         ILogger<HardwareMonitor> logger)
     {
         Options = options.Value;

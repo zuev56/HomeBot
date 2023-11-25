@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HomeBot.Features.Hardware;
 
-public sealed class HardwareMonitorOptions
+public sealed class HardwareMonitorSettings
 {
-    public static string SectionName = "HardwareMonitor";
+    public const string SectionName = "HardwareMonitor";
 
     [Required]
     public string ShellPath { get; init; } = null!;

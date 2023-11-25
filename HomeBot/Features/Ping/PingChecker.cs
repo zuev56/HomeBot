@@ -11,12 +11,12 @@ namespace HomeBot.Features.Ping;
 
 internal sealed class PingChecker
 {
-    private readonly IOptions<PingCheckerOptions> _options;
+    private readonly IOptions<PingCheckerSettings> _options;
     private readonly Dictionary<Device, bool> _hostToReachabilityMap = new();
 
     public ProgramJob<string> Job { get; }
 
-    public PingChecker(IOptions<PingCheckerOptions> options)
+    public PingChecker(IOptions<PingCheckerSettings> options)
     {
         _options = options;
 

@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HomeBot.Features.Seq;
 
-public sealed class SeqOptions
+public sealed class SeqSettings
 {
-    public static string SectionName = "Seq";
+    public const string SectionName = "Seq";
 
     [Required]
     public string Url { get; init; } = null!;

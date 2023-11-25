@@ -15,7 +15,7 @@ namespace HomeBot.Features.Weather;
 internal sealed class WeatherAnalyzer
 {
     private readonly EspMeteoParser _espMeteoParser;
-    private readonly WeatherAnalyzerOptions _weatherAnalyzerOptions;
+    private readonly WeatherAnalyzerSettings _weatherAnalyzerOptions;
     private readonly ILogger<WeatherAnalyzer>? _logger;
     private readonly TimeSpan _alarmInterval = 2.Hours();
     private DateTime? _lastAlarmDate = DateTime.UtcNow - 2.Hours();
@@ -24,7 +24,7 @@ internal sealed class WeatherAnalyzer
 
     public WeatherAnalyzer(
         EspMeteoParser espMeteoParser,
-        IOptions<WeatherAnalyzerOptions> weatherAnalyzerOptions,
+        IOptions<WeatherAnalyzerSettings> weatherAnalyzerOptions,
         ILogger<WeatherAnalyzer>? logger)
     {
         _espMeteoParser = espMeteoParser;
@@ -87,7 +87,7 @@ internal sealed class WeatherAnalyzer
         return deviations.ToString();
     }
 
-    private static string AnalyzeDeviations(EspMeteo espMeteoInfo, DeviceOptions deviceOptions)
+    private static string AnalyzeDeviations(EspMeteo espMeteoInfo, DeviceSettings deviceOptions)
     {
         var espMeteoDeviceName = $"[{deviceOptions.Name ?? espMeteoInfo.Uri}].";
         var deviations = new StringBuilder(espMeteoDeviceName);

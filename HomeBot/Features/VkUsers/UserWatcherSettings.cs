@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HomeBot.Features.VkUsers;
 
-public sealed class UserWatcherOptions
+internal sealed class UserWatcherSettings
 {
     public const string SectionName = "UserWatcher";
 

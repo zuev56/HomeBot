@@ -12,13 +12,13 @@ namespace HomeBot.Features.Seq;
 
 public sealed class SeqEventsInformer
 {
-    private readonly SeqOptions _options;
+    private readonly SeqSettings _options;
     private readonly ISeqService _seqService;
     public ProgramJob<string> DayEventsInformerJob { get; }
     public ProgramJob<string> NightEventsInformerJob { get; }
 
     public SeqEventsInformer(
-        IOptions<SeqOptions> options,
+        IOptions<SeqSettings> options,
         ISeqService seqService,
         ILogger<SeqEventsInformer> logger)
     {

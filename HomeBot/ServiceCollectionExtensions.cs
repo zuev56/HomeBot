@@ -56,14 +56,14 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddSeq(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<SeqOptions>()
-            .Bind(configuration.GetSection(SeqOptions.SectionName))
+        services.AddOptions<SeqSettings>()
+            .Bind(configuration.GetSection(SeqSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
         services.AddSingleton<ISeqService, SeqService>(static provider =>
         {
-            var options = provider.GetRequiredService<IOptions<SeqOptions>>().Value;
+            var options = provider.GetRequiredService<IOptions<SeqSettings>>().Value;
             var logger = provider.GetRequiredService<ILogger<SeqService>>();
 
             return new SeqService(options.Url, options.Token, logger);
@@ -86,8 +86,8 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddWeatherAnalyzer(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<WeatherAnalyzerOptions>()
-            .Bind(configuration.GetSection(WeatherAnalyzerOptions.SectionName))
+        services.AddOptions<WeatherAnalyzerSettings>()
+            .Bind(configuration.GetSection(WeatherAnalyzerSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
         services.AddSingleton<EspMeteoParser>();
@@ -126,8 +126,8 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddUserWatcher(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<UserWatcherOptions>()
-            .Bind(configuration.GetSection(UserWatcherOptions.SectionName))
+        services.AddOptions<UserWatcherSettings>()
+            .Bind(configuration.GetSection(UserWatcherSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -138,8 +138,8 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddHardwareMonitor(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<HardwareMonitorOptions>()
-            .Bind(configuration.GetSection(HardwareMonitorOptions.SectionName))
+        services.AddOptions<HardwareMonitorSettings>()
+            .Bind(configuration.GetSection(HardwareMonitorSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -150,8 +150,8 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddInteractionServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<NotifierOptions>()
-            .Bind(configuration.GetSection(NotifierOptions.SectionName))
+        services.AddOptions<NotifierSettings>()
+            .Bind(configuration.GetSection(NotifierSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -163,8 +163,8 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddPingChecker(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<PingCheckerOptions>()
-            .Bind(configuration.GetSection(PingCheckerOptions.SectionName))
+        services.AddOptions<PingCheckerSettings>()
+            .Bind(configuration.GetSection(PingCheckerSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 

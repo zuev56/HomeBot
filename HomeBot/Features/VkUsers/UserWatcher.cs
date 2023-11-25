@@ -12,10 +12,10 @@ namespace HomeBot.Features.VkUsers;
 
 internal sealed class UserWatcher
 {
-    private readonly UserWatcherOptions _options;
+    private readonly UserWatcherSettings _options;
     public ProgramJob<string> Job { get; }
 
-    public UserWatcher(IOptions<UserWatcherOptions> options, ILogger<UserWatcher> logger)
+    public UserWatcher(IOptions<UserWatcherSettings> options, ILogger<UserWatcher> logger)
     {
         _options = options.Value;
 
