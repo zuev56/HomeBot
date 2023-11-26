@@ -11,6 +11,8 @@ namespace HomeBot.Features.Ping;
 
 internal sealed class PingChecker
 {
+    private const int AttemptsWhenNotReachable = 3;
+    private static readonly TimeSpan BaseDelay = 500.Milliseconds();
     private readonly IOptions<PingCheckerSettings> _options;
     private readonly Dictionary<Device, bool> _hostToReachabilityMap = new();
 
@@ -54,16 +56,36 @@ internal sealed class PingChecker
 
     private static async Task<bool> IsReachable(string host)
     {
+        var attempt = 0;
+        while (attempt++ < AttemptsWhenNotReachable)
+        {
+            var pingStatus = await Ping(host);
+            if (pingStatus == IPStatus.Success)
+                return true;
+
+            await Task.Delay(BaseDelay * attempt);
+        }
+
+        return false;
+    }
+
+    private static async Task<IPStatus> Ping(string host)
+    {
         try
         {
             using var ping = new System.Net.NetworkInformation.Ping();
             var pingReply = await ping.SendPingAsync(host).ConfigureAwait(false);
 
-            return pingReply.Status == IPStatus.Success;
+            return pingReply.Status;
         }
         catch
         {
-            return false;
+            return IPStatus.Unknown;
         }
+    }
+
+    public Task<string> GetCurrentStateAsync()
+    {
+        throw new NotImplementedException();
     }
 }
