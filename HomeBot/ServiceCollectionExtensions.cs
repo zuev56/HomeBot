@@ -1,4 +1,3 @@
-using System.Net.Http;
 using HomeBot.Features.Hardware;
 using HomeBot.Features.Interaction;
 using HomeBot.Features.Ping;
@@ -10,15 +9,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Telegram.Bot;
-using Zs.Bot.Data.Abstractions;
 using Zs.Bot.Data.PostgreSQL;
-using Zs.Bot.Data.PostgreSQL.Repositories;
 using Zs.Bot.Data.Repositories;
-using Zs.Bot.Messenger.Telegram;
+using Zs.Bot.Services;
 using Zs.Bot.Services.Commands;
-using Zs.Bot.Services.DataSavers;
-using Zs.Bot.Services.Messaging;
+using Zs.Bot.Telegram.Extensions;
 using Zs.Common.Abstractions;
 using Zs.Common.Services.Logging.Seq;
 using Zs.EspMeteo.Parser;
@@ -32,8 +27,6 @@ internal static class ServiceCollectionExtensions
         var connectionString = configuration["ConnectionStrings:Default"];
         services.AddDbContextFactory<PostgreSqlBotContext>(options => options.UseNpgsql(connectionString));
 
-        services.AddSingleton<ICommandsRepository, CommandsRepository<PostgreSqlBotContext>>();
-        services.AddSingleton<IUserRolesRepository, UserRolesRepository<PostgreSqlBotContext>>();
         services.AddSingleton<IChatsRepository, ChatsRepository<PostgreSqlBotContext>>();
         services.AddSingleton<IUsersRepository, UsersRepository<PostgreSqlBotContext>>();
         services.AddSingleton<IMessagesRepository, MessagesRepository<PostgreSqlBotContext>>();
@@ -43,13 +36,15 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddTelegramBot(this IServiceCollection services, IConfiguration configuration)
     {
-        var token = configuration["Bot:Token"]!;
-        var httpClient = new HttpClient();
-        var telegramBotClient = new TelegramBotClient(token, httpClient);
+        services.AddOptions<BotSettings>()
+            .Bind(configuration.GetSection(BotSettings.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-        services.AddSingleton<ITelegramBotClient>(telegramBotClient);
-        services.AddSingleton<IMessenger, TelegramMessenger>();
-        services.AddSingleton<IMessageDataSaver, MessageDataDbSaver>();
+        var settings = services.BuildServiceProvider().GetRequiredService<IOptions<BotSettings>>().Value;
+        services.AddTelegramBotClient(settings.Token);
+        services.AddPostgreSqlMessageDataStorage();
+        services.AddCommandManager(settings.CliPath);
 
         return services;
     }
@@ -97,33 +92,6 @@ internal static class ServiceCollectionExtensions
         return services;
     }
 
-    internal static IServiceCollection AddCommandManager(this IServiceCollection services)
-    {
-        services.AddSingleton<ICommandManager, CommandManager>(provider =>
-        {
-            var commandsRepository = provider.GetRequiredService<ICommandsRepository>();
-            var userRolesRepository = provider.GetRequiredService<IUserRolesRepository>();
-            var usersRepository = provider.GetRequiredService<IUsersRepository>();
-            var dbClient = provider.GetRequiredService<IDbClient>();
-            var configuration = provider.GetRequiredService<IConfiguration>();
-            var bashPath = configuration["Bot:BashPath"];
-            var powershellPath = configuration["Bot:PowerShellPath"];
-            var logger = provider.GetRequiredService<ILogger<CommandManager>>();
-
-            return new CommandManager(
-                commandsRepository,
-                userRolesRepository,
-                usersRepository,
-                dbClient,
-                bashPath,
-                powershellPath,
-                logger
-            );
-        });
-
-        return services;
-    }
-
     internal static IServiceCollection AddUserWatcher(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<UserWatcherSettings>()
@@ -157,6 +125,7 @@ internal static class ServiceCollectionExtensions
 
         services.AddSingleton<Notifier>();
         services.AddSingleton<SystemStatusService>();
+        services.AddSingleton<CommandHandler>();
 
         return services;
     }
@@ -172,5 +141,4 @@ internal static class ServiceCollectionExtensions
 
         return services;
     }
-
 }

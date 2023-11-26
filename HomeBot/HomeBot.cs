@@ -8,10 +8,15 @@ using HomeBot.Features.Ping;
 using HomeBot.Features.Seq;
 using HomeBot.Features.VkUsers;
 using HomeBot.Features.Weather;
+using HomeBot.MessagePipeline;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Zs.Bot.Data.PostgreSQL;
+using Microsoft.Extensions.Options;
+using Zs.Bot.Services.Commands;
+using Zs.Bot.Services.Messaging;
+using Zs.Bot.Services.Pipeline;
+using Zs.Bot.Services.Storages;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
 using Zs.Common.Services.Scheduling;
@@ -22,37 +27,32 @@ namespace HomeBot;
 
 internal sealed class HomeBot : IHostedService
 {
+    private readonly IBotClient _botClient;
+    private readonly IMessageDataStorage _messageDataStorage;
     private readonly IScheduler _scheduler;
-    private readonly HardwareMonitor _hardwareMonitor;
-    private readonly UserWatcher _userWatcher;
-    private readonly WeatherAnalyzer _weatherAnalyzer;
-    private readonly SeqEventsInformer _seqEventsInformer;
     private readonly Notifier _notifier;
-    private readonly PingChecker _pingChecker;
+    private readonly BotSettings _botSettings;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<HomeBot> _logger;
 
     public HomeBot(
+        IBotClient botClient,
+        IMessageDataStorage messageDataStorage,
         IScheduler scheduler,
-        HardwareMonitor hardwareMonitor,
-        UserWatcher userWatcher,
-        WeatherAnalyzer weatherAnalyzer,
-        SeqEventsInformer seqEventsInformer,
         Notifier notifier,
-        PingChecker pingChecker,
+        IOptions<BotSettings> botOptions,
         IServiceProvider serviceProvider,
         ILogger<HomeBot> logger)
     {
+        _botClient = botClient;
+        _messageDataStorage = messageDataStorage;
         _scheduler = scheduler;
-        _hardwareMonitor = hardwareMonitor;
-        _userWatcher = userWatcher;
-        _weatherAnalyzer = weatherAnalyzer;
-        _seqEventsInformer = seqEventsInformer;
         _notifier = notifier;
-        _pingChecker = pingChecker;
+        _botSettings = botOptions.Value;
         _serviceProvider = serviceProvider;
         _logger = logger;
 
+        SetupMessagePipeline();
         CreateJobs();
     }
 
@@ -60,7 +60,6 @@ internal sealed class HomeBot : IHostedService
     {
         try
         {
-            await InitializeDataBaseAsync();
             _scheduler.Start(3.Seconds(), 1.Seconds());
 
             var startMessage = $"{nameof(HomeBot)} started."
@@ -85,23 +84,36 @@ internal sealed class HomeBot : IHostedService
         return Task.CompletedTask;
     }
 
-    private async Task InitializeDataBaseAsync()
+    private void SetupMessagePipeline()
     {
-        using var scope = _serviceProvider.CreateScope();
-        var scopedServices = scope.ServiceProvider;
-        var db = scopedServices.GetRequiredService<PostgreSqlBotContext>();
+        // TODO: Вынести из этого класса
+        var authorization = new Authorization(_botClient, _botSettings.PrivilegedUserRawIds);
+        var localMessageHandler = new MessageHandler(_serviceProvider.GetRequiredService<CommandHandler>());
+        var commandManager = _serviceProvider.GetRequiredService<ICommandManager>();
 
-        await db.Database.EnsureCreatedAsync();
+        _botClient
+            .UseLogger(_logger)
+            .UseMessageDataSaver(_messageDataStorage)
+            .Use(authorization)
+            .Use(localMessageHandler)
+            .UseCommandManager(commandManager, MessageHelper.GetMessageText, _botSettings.Name);
     }
 
     private void CreateJobs()
     {
-        _scheduler.Jobs.Add(_userWatcher.Job);
-        _scheduler.Jobs.Add(_hardwareMonitor.Job);
-        _scheduler.Jobs.Add(_weatherAnalyzer.Job);
-        _scheduler.Jobs.Add(_seqEventsInformer.DayEventsInformerJob);
-        _scheduler.Jobs.Add(_seqEventsInformer.NightEventsInformerJob);
-        _scheduler.Jobs.Add(_pingChecker.Job);
+        // TODO: Вынести из этого класса
+        var userWatcher = _serviceProvider.GetRequiredService<UserWatcher>();
+        var hardwareMonitor = _serviceProvider.GetRequiredService<HardwareMonitor>();
+        var weatherAnalyzer = _serviceProvider.GetRequiredService<WeatherAnalyzer>();
+        var seqEventsInformer = _serviceProvider.GetRequiredService<SeqEventsInformer>();
+        var pingChecker = _serviceProvider.GetRequiredService<PingChecker>();
+
+        _scheduler.Jobs.Add(userWatcher.Job);
+        _scheduler.Jobs.Add(hardwareMonitor.Job);
+        _scheduler.Jobs.Add(weatherAnalyzer.Job);
+        _scheduler.Jobs.Add(seqEventsInformer.DayEventsInformerJob);
+        _scheduler.Jobs.Add(seqEventsInformer.NightEventsInformerJob);
+        _scheduler.Jobs.Add(pingChecker.Job);
         _scheduler.Jobs.Add(LogProcessStateJob());
         _scheduler.SetDefaultExecutionCompletedHandler<string>(Job_ExecutionCompleted);
     }

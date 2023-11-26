@@ -42,18 +42,14 @@ internal sealed class WeatherAnalyzer
     {
         // Временный костыль
         if (DateTime.UtcNow < _lastAlarmDate + _alarmInterval)
-        {
             return string.Empty;
-        }
 
         var espMeteoInfos = await GetEspMeteoInfosAsync();
         var deviations = GetDeviationInfos(espMeteoInfos).Trim();
 
         // Временный костыль
         if (!string.IsNullOrEmpty(deviations))
-        {
             _lastAlarmDate = DateTime.UtcNow;
-        }
 
         return deviations;
     }
@@ -76,9 +72,7 @@ internal sealed class WeatherAnalyzer
             var settings = _weatherAnalyzerOptions.Devices.Single(s => s.Uri == espMeteoInfo.Uri);
             var deviceDeviations = AnalyzeDeviations(espMeteoInfo, settings);
             if (string.IsNullOrEmpty(deviceDeviations))
-            {
                 continue;
-            }
 
             deviations.AppendLine();
             deviations.AppendLine(deviceDeviations);
@@ -96,17 +90,13 @@ internal sealed class WeatherAnalyzer
         {
             var sensorSettings = deviceOptions.Sensors.SingleOrDefault(s => s.Name == sensor.Name);
             if (sensorSettings is null)
-            {
                 continue;
-            }
 
             foreach (var parameter in sensor.Parameters)
             {
                 var parameterSettings = sensorSettings.Parameters.SingleOrDefault(s => s.Name == parameter.Name);
                 if (parameterSettings is null)
-                {
                     continue;
-                }
 
                 if (parameter.Value > parameterSettings.HighLimit)
                 {

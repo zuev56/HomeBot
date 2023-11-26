@@ -3,12 +3,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
-using HomeBot.Features.Interaction;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Zs.Common.Exceptions;
+using Zs.Bot.Data.PostgreSQL;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Connection;
 using Zs.Common.Services.Scheduling;
@@ -21,18 +20,12 @@ public static class Program
     {
         try
         {
-            Log.Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(CreateConfiguration(), "Serilog")
-                .CreateLogger();
+            InitializeLogger();
 
-            Log.Warning("-! Starting {ProcessName} (MachineName: {MachineName}, OS: {OS}, User: {User}, ProcessId: {ProcessId})",
-                Process.GetCurrentProcess().MainModule!.ModuleName,
-                Environment.MachineName,
-                Environment.OSVersion,
-                Environment.UserName,
-                Environment.ProcessId);
-
-            await CreateHostBuilder(args).RunConsoleAsync().ConfigureAwait(false);
+            var hostBuilder = CreateHostBuilder(args);
+            var host = hostBuilder.UseConsoleLifetime().Build();
+            await InitializeDataBaseAsync(host.Services);
+            await host.RunAsync();
         }
         catch (Exception ex)
         {
@@ -42,14 +35,26 @@ public static class Program
         }
     }
 
+    private static void InitializeLogger()
+    {
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(CreateConfiguration(), "Serilog")
+            .CreateLogger();
+
+        Log.Warning("-! Starting {ProcessName} (MachineName: {MachineName}, OS: {OS}, User: {User}, ProcessId: {ProcessId})",
+            Process.GetCurrentProcess().MainModule!.ModuleName,
+            Environment.MachineName,
+            Environment.OSVersion,
+            Environment.UserName,
+            Environment.ProcessId);
+    }
+
     private static IConfiguration CreateConfiguration()
     {
         var appsettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
 
         if (!File.Exists(appsettingsPath))
-        {
-            throw new AppsettingsNotFoundException();
-        }
+            throw new InvalidOperationException("appsettings.json not found");
 
         var configuration = new ConfigurationManager();
         configuration.AddJsonFile(appsettingsPath, optional: false, reloadOnChange: true);
@@ -76,7 +81,6 @@ public static class Program
                     .AddSeq(configuration)
                     .AddDbClient(configuration)
                     .AddWeatherAnalyzer(configuration)
-                    .AddCommandManager()
                     .AddUserWatcher(configuration)
                     .AddHardwareMonitor(configuration)
                     .AddInteractionServices(configuration)
@@ -84,9 +88,16 @@ public static class Program
                     .AddSingleton<IScheduler, Scheduler>();
 
                 services.AddHostedService<HomeBot>();
-
-                ActivatorUtilities.CreateInstance<MessageHandler>(services.BuildServiceProvider());
             });
+    }
+
+    private static async Task InitializeDataBaseAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var scopedServices = scope.ServiceProvider;
+        var db = scopedServices.GetRequiredService<PostgreSqlBotContext>();
+
+        await db.Database.EnsureCreatedAsync();
     }
 
     private static void TrySaveFailInfo(string text)
