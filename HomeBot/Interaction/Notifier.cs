@@ -64,7 +64,7 @@ internal sealed class Notifier
         foreach (int rawUserId in _botSettings.PrivilegedUserRawIds)
         {
             var todayAlerts = await _messagesRepository.FindWithTextAsync(rawUserId, templateForExclusion, dateRange);
-            if (todayAlerts.All(m => MessageHelper.GetMessageText(m)?.WithoutDigits() != message.WithoutDigits()))
+            if (todayAlerts.All(m => BotSettings.GetMessageText(m)?.WithoutDigits() != message.WithoutDigits()))
                 await NotifyAsync(preparedMessage);
         }
 

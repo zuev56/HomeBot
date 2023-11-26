@@ -96,7 +96,7 @@ internal sealed class HomeBot : IHostedService
             .UseMessageDataSaver(_messageDataStorage)
             .Use(authorization)
             .Use(localMessageHandler)
-            .UseCommandManager(commandManager, MessageHelper.GetMessageText, _botSettings.Name);
+            .UseCommandManager(commandManager, BotSettings.GetMessageText, _botSettings.Name);
     }
 
     private void CreateJobs()

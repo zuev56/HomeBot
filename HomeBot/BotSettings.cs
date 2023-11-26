@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Zs.Bot.Data.Models;
+using Zs.Bot.Telegram.Extensions;
 
 namespace HomeBot;
 
@@ -21,4 +23,6 @@ internal sealed class BotSettings
 
     [Required]
     public IReadOnlyList<long> PrivilegedUserRawIds { get; init; } = Array.Empty<long>();
+
+    public static readonly Func<Message, string?> GetMessageText = static message => message.GetText();
 }

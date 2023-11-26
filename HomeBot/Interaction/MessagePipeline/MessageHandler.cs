@@ -25,7 +25,7 @@ internal sealed class MessageHandler : PipelineStep
         if (action != MessageAction.Received)
             return Result.Success();
 
-        var messageText = MessageHelper.GetMessageText(message!)?.Trim().ToLower();
+        var messageText = BotSettings.GetMessageText(message!)?.Trim().ToLower();
         if (!messageText.IsBotCommand())
             return Result.Success();
 
