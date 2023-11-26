@@ -20,7 +20,7 @@ internal sealed class CommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var knownCommands = new[] {FullStatus, WeatherStatus, HardwareStatus, UserStatus};
+        var knownCommands = new[] {FullStatus, WeatherStatus, HardwareStatus, UserStatus, PingStatus};
         if (!knownCommands.Contains(command))
             return false;
 
@@ -30,6 +30,7 @@ internal sealed class CommandHandler
             WeatherStatus => await _systemStatusService.GetWeatherStatusAsync(),
             HardwareStatus => await _systemStatusService.GetHardwareStatusAsync(),
             UserStatus => await _systemStatusService.GetUsersStatusAsync(),
+            PingStatus => await _systemStatusService.GetPingStatusAsync(),
             _ => throw new ArgumentOutOfRangeException(nameof(command))
         };
 

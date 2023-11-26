@@ -13,25 +13,25 @@ internal sealed class PingChecker
 {
     private const int AttemptsWhenNotReachable = 3;
     private static readonly TimeSpan BaseDelay = 500.Milliseconds();
-    private readonly IOptions<PingCheckerSettings> _options;
+    private readonly PingCheckerSettings _settings;
     private readonly Dictionary<Device, bool> _hostToReachabilityMap = new();
 
     public ProgramJob<string> Job { get; }
 
     public PingChecker(IOptions<PingCheckerSettings> options)
     {
-        _options = options;
+        _settings = options.Value;
 
         Job = new ProgramJob<string>(
             period: 20.Seconds(),
-            method: PingAsync,
+            method: PingDevicesAsync,
             startUtcDate: DateTime.UtcNow + 7.Seconds());
     }
 
-    private async Task<string> PingAsync()
+    private async Task<string> PingDevicesAsync()
     {
         var message = new StringBuilder();
-        foreach (var device in _options.Value.Devices)
+        foreach (var device in _settings.Devices)
         {
             var isReachable = await IsReachable(device.Host);
 
@@ -59,7 +59,7 @@ internal sealed class PingChecker
         var attempt = 0;
         while (attempt++ < AttemptsWhenNotReachable)
         {
-            var pingStatus = await Ping(host);
+            var pingStatus = await PingAsync(host);
             if (pingStatus == IPStatus.Success)
                 return true;
 
@@ -69,7 +69,7 @@ internal sealed class PingChecker
         return false;
     }
 
-    private static async Task<IPStatus> Ping(string host)
+    private static async Task<IPStatus> PingAsync(string host)
     {
         try
         {
@@ -84,8 +84,18 @@ internal sealed class PingChecker
         }
     }
 
-    public Task<string> GetCurrentStateAsync()
+    public async Task<string> GetCurrentStateAsync()
     {
-        throw new NotImplementedException();
+        if (_settings.Devices.Length == 0)
+            return string.Empty;
+
+        var stateMessageBuilder = new StringBuilder();
+        foreach (var device in _settings.Devices)
+        {
+            var hostStatus = await PingAsync(device.Host);
+            stateMessageBuilder.AppendLine($"{device.Description ?? device.Host}: {hostStatus}");
+        }
+
+        return stateMessageBuilder.ToString();
     }
 }
