@@ -97,6 +97,6 @@ internal sealed class PingChecker : IHasJob, IHasCurrentState
             stateMessageBuilder.AppendLine($"{device.Description ?? device.Host}: {hostStatus}");
         }
 
-        return stateMessageBuilder.ToString();
+        return stateMessageBuilder.ToString().Trim();
     }
 }

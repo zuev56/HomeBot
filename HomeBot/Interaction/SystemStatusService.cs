@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using HomeBot.Features.Hardware;
 using HomeBot.Features.Ping;
@@ -24,22 +25,27 @@ internal sealed class SystemStatusService
 
     public async Task<string> GetFullStatus()
     {
-        var hardwareStatus = await GetHardwareStatusAsync();
-        var usersStatus = await GetUsersStatusAsync();
-        var weatherStatus = await GetWeatherStatusAsync();
-        var pingStatus = await GetPingStatusAsync();
+        var sw = Stopwatch.StartNew();
+        var getHardwareStatus = GetHardwareStatusAsync();
+        var getUsersStatus = GetUsersStatusAsync();
+        var getWeatherStatus = GetWeatherStatusAsync();
+        var getPingStatus = GetPingStatusAsync();
+
+        await Task.WhenAll(getHardwareStatus, getUsersStatus, getWeatherStatus, getPingStatus);
+
         var nl = Environment.NewLine;
-        return $"Hardware:{nl}{hardwareStatus}{nl}{nl}" +
-               $"Users:{nl}{usersStatus}{nl}{nl}" +
-               $"Weather:{nl}{weatherStatus}{nl}{nl}" +
-               $"Ping:{nl}{pingStatus}";
+        return $"Hardware:{nl}{getHardwareStatus.Result}{nl}{nl}" +
+               $"Users:{nl}{getUsersStatus.Result}{nl}{nl}" +
+               $"Weather:{nl}{getWeatherStatus.Result}{nl}{nl}" +
+               $"Ping:{nl}{getPingStatus.Result}{nl}{nl}" +
+               $"Request time: {sw.ElapsedMilliseconds} ms";
     }
 
-    public async Task<string> GetHardwareStatusAsync() => await _hardwareMonitor.GetCurrentStateAsync();
+    public Task<string> GetHardwareStatusAsync() => _hardwareMonitor.GetCurrentStateAsync();
 
-    public async Task<string> GetUsersStatusAsync() => await _userWatcher.GetCurrentStateAsync();
+    public Task<string> GetUsersStatusAsync() => _userWatcher.GetCurrentStateAsync();
 
-    public async Task<string> GetWeatherStatusAsync() => await _weatherAnalyzer.GetCurrentStateAsync();
+    public Task<string> GetWeatherStatusAsync() => _weatherAnalyzer.GetCurrentStateAsync();
 
-    public async Task<string> GetPingStatusAsync() => await _pingChecker.GetCurrentStateAsync();
+    public Task<string> GetPingStatusAsync() => _pingChecker.GetCurrentStateAsync();
 }

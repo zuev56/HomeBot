@@ -6,7 +6,6 @@
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <PublishTrimmed>false</PublishTrimmed>
     <SelfContained>true</SelfContained>
-    <!--<PublishSingleFile>true</PublishSingleFile>-->
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     <UserSecretsId>b5476c67-808d-4a38-8c4d-351678fd82a5</UserSecretsId>
   </PropertyGroup>

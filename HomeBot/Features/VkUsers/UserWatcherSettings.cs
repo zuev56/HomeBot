@@ -14,5 +14,5 @@ internal sealed class UserWatcherSettings
     public int[] TrackedIds { get; set; } = Array.Empty<int>();
 
     [Required]
-    public int InactiveHoursLimit { get; set; }
+    public double InactiveHoursLimit { get; set; }
 }

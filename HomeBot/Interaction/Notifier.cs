@@ -11,6 +11,7 @@ namespace HomeBot.Interaction;
 
 internal sealed class Notifier
 {
+    private const int SecondsPerDay = 86400;
     private readonly IBotClient _botClient;
     private readonly IChatsRepository _chatsRepository;
     private readonly IMessagesRepository _messagesRepository;
@@ -60,7 +61,8 @@ internal sealed class Notifier
     public async Task NotifyOnceADayAsync(string message, string templateForExclusion)
     {
         var preparedMessage = GetPreparedMessage(message);
-        var dateRange = new DateTimeRange(DateTime.Today.ToUniversalTime(), DateTime.Today.AddMinutes(1439));
+        var utcToday = DateTime.Today.ToUniversalTime();
+        var dateRange = new DateTimeRange(utcToday, utcToday.AddSeconds(SecondsPerDay-1));
         foreach (int rawUserId in _botSettings.PrivilegedUserRawIds)
         {
             var todayAlerts = await _messagesRepository.FindWithTextAsync(rawUserId, templateForExclusion, dateRange);
