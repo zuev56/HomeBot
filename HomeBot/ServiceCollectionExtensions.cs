@@ -1,9 +1,9 @@
 using HomeBot.Features.Hardware;
-using HomeBot.Features.Interaction;
 using HomeBot.Features.Ping;
 using HomeBot.Features.Seq;
 using HomeBot.Features.VkUsers;
 using HomeBot.Features.Weather;
+using HomeBot.Interaction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +12,6 @@ using Microsoft.Extensions.Options;
 using Zs.Bot.Data.PostgreSQL;
 using Zs.Bot.Data.Repositories;
 using Zs.Bot.Services;
-using Zs.Bot.Services.Commands;
 using Zs.Bot.Telegram.Extensions;
 using Zs.Common.Abstractions;
 using Zs.Common.Services.Logging.Seq;

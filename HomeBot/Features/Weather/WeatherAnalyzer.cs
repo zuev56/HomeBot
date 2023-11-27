@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HomeBot.Features.Hardware;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
@@ -12,7 +13,7 @@ using Zs.EspMeteo.Parser.Models;
 
 namespace HomeBot.Features.Weather;
 
-internal sealed class WeatherAnalyzer
+internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
 {
     private readonly EspMeteoParser _espMeteoParser;
     private readonly WeatherAnalyzerSettings _weatherAnalyzerOptions;

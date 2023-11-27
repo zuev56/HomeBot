@@ -7,7 +7,7 @@ using Zs.Bot.Services.Messaging;
 using Zs.Common.Extensions;
 using Zs.Common.Models;
 
-namespace HomeBot.Features.Interaction;
+namespace HomeBot.Interaction;
 
 internal sealed class Notifier
 {
@@ -67,6 +67,5 @@ internal sealed class Notifier
             if (todayAlerts.All(m => BotSettings.GetMessageText(m)?.WithoutDigits() != message.WithoutDigits()))
                 await NotifyAsync(preparedMessage);
         }
-
     }
 }

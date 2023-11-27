@@ -1,6 +1,5 @@
 using System.Threading;
 using System.Threading.Tasks;
-using HomeBot.Features.Interaction;
 using Zs.Bot.Data.Models;
 using Zs.Bot.Services.Commands;
 using Zs.Bot.Services.Messaging;
@@ -8,7 +7,7 @@ using Zs.Bot.Services.Pipeline;
 using Zs.Common.Models;
 using static HomeBot.Faults;
 
-namespace HomeBot.MessagePipeline;
+namespace HomeBot.Interaction.MessagePipeline;
 
 internal sealed class MessageHandler : PipelineStep
 {

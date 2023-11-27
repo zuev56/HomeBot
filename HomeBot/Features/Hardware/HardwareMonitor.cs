@@ -8,7 +8,7 @@ using Zs.Common.Services.Scheduling;
 
 namespace HomeBot.Features.Hardware;
 
-public abstract class HardwareMonitor
+public abstract class HardwareMonitor : IHasJob, IHasCurrentState
 {
     protected readonly HardwareMonitorSettings Options;
     protected readonly ILogger<HardwareMonitor> Logger;

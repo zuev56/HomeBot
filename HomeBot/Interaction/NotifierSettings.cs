@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace HomeBot.Features.Interaction;
+namespace HomeBot.Interaction;
 
 internal sealed class NotifierSettings
 {

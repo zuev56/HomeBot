@@ -1,4 +1,4 @@
-namespace HomeBot.MessagePipeline;
+namespace HomeBot.Interaction.MessagePipeline;
 
 internal static class Commands
 {

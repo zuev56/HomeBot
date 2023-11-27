@@ -5,7 +5,7 @@ using HomeBot.Features.Ping;
 using HomeBot.Features.VkUsers;
 using HomeBot.Features.Weather;
 
-namespace HomeBot.Features.Interaction;
+namespace HomeBot.Interaction;
 
 internal sealed class SystemStatusService
 {

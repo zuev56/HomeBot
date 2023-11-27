@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Threading.Tasks;
+using HomeBot.Features.Hardware;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
@@ -10,7 +11,7 @@ using static HomeBot.Features.VkUsers.Constants;
 
 namespace HomeBot.Features.VkUsers;
 
-internal sealed class UserWatcher
+internal sealed class UserWatcher : IHasJob, IHasCurrentState
 {
     private readonly UserWatcherSettings _options;
     public ProgramJob<string> Job { get; }

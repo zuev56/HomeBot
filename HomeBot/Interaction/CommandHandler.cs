@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using static HomeBot.MessagePipeline.Commands;
+using static HomeBot.Interaction.MessagePipeline.Commands;
 
-namespace HomeBot.Features.Interaction;
+namespace HomeBot.Interaction;
 
 internal sealed class CommandHandler
 {

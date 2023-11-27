@@ -7,7 +7,7 @@ using Zs.Bot.Services.Messaging;
 using Zs.Bot.Services.Pipeline;
 using Zs.Common.Models;
 
-namespace HomeBot.MessagePipeline;
+namespace HomeBot.Interaction.MessagePipeline;
 
 internal sealed class Authorization : PipelineStep
 {

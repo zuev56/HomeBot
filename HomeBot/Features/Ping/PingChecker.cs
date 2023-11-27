@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
+using HomeBot.Features.Hardware;
 using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Scheduling;
 
 namespace HomeBot.Features.Ping;
 
-internal sealed class PingChecker
+internal sealed class PingChecker : IHasJob, IHasCurrentState
 {
     private const int AttemptsWhenNotReachable = 3;
     private static readonly TimeSpan BaseDelay = 500.Milliseconds();
