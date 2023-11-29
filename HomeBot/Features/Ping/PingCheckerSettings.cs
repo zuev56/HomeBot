@@ -8,5 +8,5 @@ public sealed class PingCheckerSettings
     public const string SectionName = "PingChecker";
 
     [Required]
-    public Device[] Devices { get; init; } = Array.Empty<Device>();
+    public Target[] Targets { get; init; } = Array.Empty<Target>();
 }

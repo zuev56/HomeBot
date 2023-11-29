@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using HomeBot.Features.Hardware;
@@ -15,7 +16,7 @@ internal sealed class PingChecker : IHasJob, IHasCurrentState
     private const int AttemptsWhenNotReachable = 3;
     private static readonly TimeSpan BaseDelay = 500.Milliseconds();
     private readonly PingCheckerSettings _settings;
-    private readonly Dictionary<Device, bool> _hostToReachabilityMap = new();
+    private readonly Dictionary<Target, bool> _targetToReachabilityMap = new();
 
     public ProgramJob<string> Job { get; }
 
@@ -25,42 +26,42 @@ internal sealed class PingChecker : IHasJob, IHasCurrentState
 
         Job = new ProgramJob<string>(
             period: 20.Seconds(),
-            method: PingDevicesAsync,
+            method: PingTargetsAsync,
             startUtcDate: DateTime.UtcNow + 7.Seconds());
     }
 
-    private async Task<string> PingDevicesAsync()
+    private async Task<string> PingTargetsAsync()
     {
         var message = new StringBuilder();
-        foreach (var device in _settings.Devices)
+        foreach (var target in _settings.Targets)
         {
-            var isReachable = await IsReachable(device.Host);
+            var isReachable = await IsReachable(target);
 
-            if (_hostToReachabilityMap.TryGetValue(device, out var lastIsReachable))
+            if (_targetToReachabilityMap.TryGetValue(target, out var lastIsReachable))
             {
                 if (lastIsReachable == isReachable)
                     continue;
 
-                _hostToReachabilityMap[device] = isReachable;
+                _targetToReachabilityMap[target] = isReachable;
 
                 if (message.Length > 0)
                     message.Append(Environment.NewLine);
 
-                message.Append($"Connection to '{device.Description}' {(isReachable ? "restored" : "lost")}.");
+                message.Append($"Connection to '{target.Description}' {(isReachable ? "restored" : "lost")}.");
             }
             else
-                _hostToReachabilityMap.Add(device, isReachable);
+                _targetToReachabilityMap.Add(target, isReachable);
         }
 
         return message.ToString();
     }
 
-    private static async Task<bool> IsReachable(string host)
+    private static async Task<bool> IsReachable(Target target)
     {
         var attempt = 0;
         while (attempt++ < AttemptsWhenNotReachable)
         {
-            var pingStatus = await PingAsync(host);
+            var pingStatus = await PingAsync(target);
             if (pingStatus == IPStatus.Success)
                 return true;
 
@@ -68,6 +69,13 @@ internal sealed class PingChecker : IHasJob, IHasCurrentState
         }
 
         return false;
+    }
+
+    private static async Task<IPStatus> PingAsync(Target target)
+    {
+        return target.Port.HasValue
+            ? Ping(target.Host, target.Port.Value)
+            : await PingAsync(target.Host);
     }
 
     private static async Task<IPStatus> PingAsync(string host)
@@ -85,16 +93,30 @@ internal sealed class PingChecker : IHasJob, IHasCurrentState
         }
     }
 
+    private static IPStatus Ping(string host, int port)
+    {
+        try
+        {
+            using var client = new TcpClient(host, port);
+            return IPStatus.Success;
+        }
+        catch
+        {
+            return IPStatus.Unknown;
+        }
+    }
+
     public async Task<string> GetCurrentStateAsync()
     {
-        if (_settings.Devices.Length == 0)
+        if (_settings.Targets.Length == 0)
             return string.Empty;
 
         var stateMessageBuilder = new StringBuilder();
-        foreach (var device in _settings.Devices)
+        foreach (var target in _settings.Targets)
         {
-            var hostStatus = await PingAsync(device.Host);
-            stateMessageBuilder.AppendLine($"{device.Description ?? device.Host}: {hostStatus}");
+            var hostStatus = await PingAsync(target);
+            var targetName = target.Description ?? target.Host + (target.Port.HasValue ? $":{target.Port}" : string.Empty);
+            stateMessageBuilder.AppendLine($"{targetName}: {hostStatus}");
         }
 
         return stateMessageBuilder.ToString().Trim();
