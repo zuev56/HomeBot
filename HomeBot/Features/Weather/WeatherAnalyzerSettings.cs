@@ -23,6 +23,7 @@ internal sealed class SensorSettings
 {
     [Required]
     public string Name { get; init; } = null!;
+    public string? Alias { get; init; }
     [Required]
     public ParameterSettings[] Parameters { get; init; } = Array.Empty<ParameterSettings>();
 }

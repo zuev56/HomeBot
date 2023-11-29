@@ -16,7 +16,7 @@ namespace HomeBot.Features.Weather;
 internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
 {
     private readonly EspMeteoParser _espMeteoParser;
-    private readonly WeatherAnalyzerSettings _weatherAnalyzerOptions;
+    private readonly WeatherAnalyzerSettings _settings;
     private readonly ILogger<WeatherAnalyzer>? _logger;
     private readonly TimeSpan _alarmInterval = 2.Hours();
     private DateTime? _lastAlarmDate = DateTime.UtcNow - 2.Hours();
@@ -25,11 +25,11 @@ internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
 
     public WeatherAnalyzer(
         EspMeteoParser espMeteoParser,
-        IOptions<WeatherAnalyzerSettings> weatherAnalyzerOptions,
+        IOptions<WeatherAnalyzerSettings> options,
         ILogger<WeatherAnalyzer>? logger)
     {
         _espMeteoParser = espMeteoParser;
-        _weatherAnalyzerOptions = weatherAnalyzerOptions.Value;
+        _settings = options.Value;
         _logger = logger;
 
         Job = new ProgramJob<string>(
@@ -45,8 +45,8 @@ internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
         if (DateTime.UtcNow < _lastAlarmDate + _alarmInterval)
             return string.Empty;
 
-        var espMeteoInfos = await GetEspMeteoInfosAsync();
-        var deviations = GetDeviationInfos(espMeteoInfos).Trim();
+        var espMeteos = await GetEspMeteoInfosAsync();
+        var deviations = GetDeviationInfos(espMeteos).Trim();
 
         // Временный костыль
         if (!string.IsNullOrEmpty(deviations))
@@ -57,7 +57,7 @@ internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
 
     private async Task<EspMeteo[]> GetEspMeteoInfosAsync()
     {
-        var parseTasks = _weatherAnalyzerOptions.Devices
+        var parseTasks = _settings.Devices
             .Select(static d => d.Uri)
             .Select(url => _espMeteoParser.ParseAsync(url));
 
@@ -65,31 +65,31 @@ internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
         return espMeteos;
     }
 
-    private string GetDeviationInfos(IEnumerable<EspMeteo> espMeteoInfos)
+    private string GetDeviationInfos(IEnumerable<EspMeteo> espMeteos)
     {
-        var deviations = new StringBuilder();
-        foreach (var espMeteoInfo in espMeteoInfos)
+        var allDeviations = new StringBuilder();
+        foreach (var espMeteo in espMeteos)
         {
-            var settings = _weatherAnalyzerOptions.Devices.Single(s => s.Uri == espMeteoInfo.Uri);
-            var deviceDeviations = AnalyzeDeviations(espMeteoInfo, settings);
-            if (string.IsNullOrEmpty(deviceDeviations))
+            var settings = _settings.Devices.Single(s => s.Uri == espMeteo.Uri);
+            var deviations = AnalyzeDeviations(espMeteo, settings);
+            if (string.IsNullOrEmpty(deviations))
                 continue;
 
-            deviations.AppendLine();
-            deviations.AppendLine(deviceDeviations);
+            allDeviations.AppendLine();
+            allDeviations.AppendLine(deviations);
         }
 
-        return deviations.ToString();
+        return allDeviations.ToString();
     }
 
-    private static string AnalyzeDeviations(EspMeteo espMeteoInfo, DeviceSettings deviceOptions)
+    private static string AnalyzeDeviations(EspMeteo espMeteo, DeviceSettings deviceSettings)
     {
-        var espMeteoDeviceName = $"[{deviceOptions.Name ?? espMeteoInfo.Uri}].";
+        var espMeteoDeviceName = $"[{deviceSettings.Name ?? espMeteo.Uri}].";
         var deviations = new StringBuilder(espMeteoDeviceName);
 
-        foreach (var sensor in espMeteoInfo.Sensors)
+        foreach (var sensor in espMeteo.Sensors)
         {
-            var sensorSettings = deviceOptions.Sensors.SingleOrDefault(s => s.Name == sensor.Name);
+            var sensorSettings = deviceSettings.Sensors.SingleOrDefault(s => s.Name == sensor.Name);
             if (sensorSettings is null)
                 continue;
 
@@ -101,13 +101,13 @@ internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
 
                 if (parameter.Value > parameterSettings.HighLimit)
                 {
-                    var deviation = $"[{sensor.Name}].[{parameter.Name}]: value {parameter.Value} {parameter.Unit} is higher than limit {parameterSettings.HighLimit} {parameter.Unit}";
+                    var deviation = $"{sensorSettings.Alias ?? sensor.Name}.{parameter.Name}: value {parameter.Value} {parameter.Unit} is higher than limit {parameterSettings.HighLimit} {parameter.Unit}";
                     deviations.AppendLine(deviation);
                 }
 
                 if (parameter.Value < parameterSettings.LowLimit)
                 {
-                    var deviation = $"[{sensor.Name}].[{parameter.Name}]: value {parameter.Value} {parameter.Unit} is lower than limit {parameterSettings.LowLimit} {parameter.Unit}";
+                    var deviation = $"{sensorSettings.Alias ?? sensor.Name}.{parameter.Name}: value {parameter.Value} {parameter.Unit} is lower than limit {parameterSettings.LowLimit} {parameter.Unit}";
                     deviations.AppendLine(deviation);
                 }
             }
@@ -119,12 +119,17 @@ internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
 
     public async Task<string> GetCurrentStateAsync()
     {
-        var espMeteoInfos = await GetEspMeteoInfosAsync();
-        var state = espMeteoInfos.SelectMany(
-            static device => device.Sensors.SelectMany(
-                static sensor => sensor.Parameters.Select(
-                    parameter => $"[{sensor.Name}].{parameter.Name}: {parameter.Value}")));
+        var espMeteos = await GetEspMeteoInfosAsync();
+        var states = espMeteos.SelectMany(espMeteo =>
+        {
+            var deviceSettings = _settings.Devices.Single(s => s.Uri == espMeteo.Uri);
+            return espMeteo.Sensors.SelectMany(sensor =>
+            {
+                var sensorSettings = deviceSettings.Sensors.SingleOrDefault(s => s.Name == sensor.Name);
+                return sensor.Parameters.Select(parameter => $"{sensorSettings?.Alias ?? sensor.Name}.{parameter.Name}: {parameter.Value}");
+            });
+        });
 
-        return string.Join(Environment.NewLine, state);
+        return string.Join(Environment.NewLine, states);
     }
 }
