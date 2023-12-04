@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HomeBot.Features.Hardware;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
@@ -11,7 +12,7 @@ using Zs.Common.Services.Scheduling;
 
 namespace HomeBot.Features.Seq;
 
-public sealed class SeqEventsInformer
+public sealed class SeqEventsInformer : IHasCurrentState
 {
     private const int UtcToMsk = +3;
     private readonly SeqSettings2 _settings;
@@ -70,6 +71,17 @@ public sealed class SeqEventsInformer
             messageBuilder.AppendLine().AppendLine();
         }
 
-        return messageBuilder.ToString().ReplaceEndingWithThreeDots(maxStringLength: 2000);
+        return messageBuilder.ToString().ReplaceEndingWithThreeDots(maxStringLength: 4000);
+    }
+
+    public async Task<string> GetCurrentStateAsync()
+    {
+        var seqEvents = await _seqService.GetLastEventsAsync(300, _settings.ObservedSignals);
+        var last24Hours = seqEvents.Count(e => e.Timestamp > DateTime.UtcNow.AddDays(-1));
+        var lastHour = seqEvents.Count(e => e.Timestamp > DateTime.UtcNow.AddHours(-1));
+
+        var sign24 = seqEvents.Count == last24Hours ? ">" : "";
+        var sign1 = seqEvents.Count == lastHour ? ">" : "";
+        return $"{sign24}{last24Hours} events in 24 hours{Environment.NewLine}{sign1}{lastHour} events in last hour";
     }
 }
