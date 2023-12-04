@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,17 +13,18 @@ namespace HomeBot.Features.Seq;
 
 public sealed class SeqEventsInformer
 {
-    private readonly SeqSettings _options;
+    private const int UtcToMsk = +3;
+    private readonly SeqSettings2 _settings;
     private readonly ISeqService _seqService;
     public ProgramJob<string> DayEventsInformerJob { get; }
     public ProgramJob<string> NightEventsInformerJob { get; }
 
     public SeqEventsInformer(
-        IOptions<SeqSettings> options,
+        IOptions<SeqSettings2> options,
         ISeqService seqService,
         ILogger<SeqEventsInformer> logger)
     {
-        _options = options.Value;
+        _settings = options.Value;
         _seqService = seqService;
 
         DayEventsInformerJob = new ProgramJob<string>(
@@ -44,36 +46,30 @@ public sealed class SeqEventsInformer
 
     private async Task<string> GetSeqEventsAsync(DateTime fromDate)
     {
-        var events = await _seqService.GetLastEventsAsync(fromDate, 10, _options.ObservedSignals);
+        var seqEvents = await _seqService.GetLastEventsAsync(100, _settings.ObservedSignals)
+            .ContinueWith(task => task.Result.Where(seqEvent => seqEvent.Timestamp > fromDate).ToList());
 
-        return events.Count > 0
-            ? CreateMessageFromSeqEvents(events)
+        return seqEvents.Count > 0
+            ? CreateMessageFromSeqEvents(seqEvents)
             : string.Empty;
     }
 
-    private string CreateMessageFromSeqEvents(IEnumerable<SeqEvent> events)
+    private string CreateMessageFromSeqEvents(IEnumerable<SeqEvent> seqEvents)
     {
-        var sb = new StringBuilder();
+        var messageBuilder = new StringBuilder();
 
-        foreach (var seqEvent in events)
+        foreach (var seqEvent in seqEvents)
         {
-            var level = seqEvent.Level.ToUpperInvariant();
-            var localDate = seqEvent.Date.AddHours(3).ToString("dd.MM.yyyy HH:mm:ss");
+            var localDate = seqEvent.Timestamp.AddHours(UtcToMsk).ToString("dd.MM.yyyy HH:mm:ss");
+            var applicationName = seqEvent.Parameters["ApplicationName"].ToString();
 
-            sb.AppendFormat("[{0}]: ", level).Append(localDate).AppendLine();
+            messageBuilder.AppendLine(localDate)
+                .AppendLine($"App: {applicationName}")
+                .Append(seqEvent.Level.ToUpperInvariant()).Append(": ").Append(seqEvent.Message);
 
-            sb.Append("Properties:").AppendLine();
-            seqEvent.Properties
-                .ForEach(p => sb.Append("  • ").Append(p.ReplaceEndingWithThreeDots(150)).AppendLine());
-
-            sb.Append("Messages:").AppendLine();
-            seqEvent.Messages
-                .ForEach(m => sb.Append("  • ").Append(m.ReplaceEndingWithThreeDots(300)).AppendLine());
-
-            sb.Append(_seqService.Url).Append('/').Append(seqEvent.LinkPart[..seqEvent.LinkPart.IndexOf('{')]).Append("?render");
-            sb.AppendLine().AppendLine();
+            messageBuilder.AppendLine().AppendLine();
         }
 
-        return sb.ToString();
+        return messageBuilder.ToString().ReplaceEndingWithThreeDots(maxStringLength: 2000);
     }
 }

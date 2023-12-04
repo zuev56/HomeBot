@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HomeBot.Features.Seq;
 
-public sealed class SeqSettings
+public sealed class SeqSettings2 // TODO: remove Zs.Common.Services.Logging.Seq.SeqSettings
 {
     public const string SectionName = "Seq";
 

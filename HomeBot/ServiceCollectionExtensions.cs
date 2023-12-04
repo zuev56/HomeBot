@@ -50,14 +50,14 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection AddSeq(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<SeqSettings>()
-            .Bind(configuration.GetSection(SeqSettings.SectionName))
+        services.AddOptions<SeqSettings2>()
+            .Bind(configuration.GetSection(SeqSettings2.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
         services.AddSingleton<ISeqService, SeqService>(static provider =>
         {
-            var options = provider.GetRequiredService<IOptions<SeqSettings>>().Value;
+            var options = provider.GetRequiredService<IOptions<SeqSettings2>>().Value;
             var logger = provider.GetRequiredService<ILogger<SeqService>>();
 
             return new SeqService(options.Url, options.Token, logger);

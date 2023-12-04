@@ -20,11 +20,11 @@
     <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="6.0.0" />
-    <PackageReference Include="Zs.Bot.Data.PostgreSQL" Version="7.1.2" />
+    <PackageReference Include="Zs.Bot.Data.PostgreSQL" Version="7.1.4" />
     <PackageReference Include="Zs.Bot.Telegram" Version="7.1.3" />
-    <PackageReference Include="Zs.EspMeteo.Parser" Version="7.0.2" />
+    <PackageReference Include="Zs.EspMeteo.Parser" Version="7.0.4" />
   </ItemGroup>
 
   <ItemGroup>

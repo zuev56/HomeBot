@@ -50,15 +50,15 @@ internal sealed class UserWatcher : IHasJob, IHasCurrentState
 
     private async Task<User?> GetUserAsync(int userId)
     {
-        var getUserUrl = $"{_options.VkActivityApiUri}/api/users/{userId}";
-        var user = await Request.GetAsync<User>(getUserUrl, throwExceptionOnError: true);
+        var url = $"{_options.VkActivityApiUri}/api/users/{userId}";
+        var user = await Request.Create(url).GetAsync<User>();
         return user;
     }
 
     private async Task<TimeSpan> GetInactiveTimeAsync(int userId)
     {
-        var getActivityUrl = $"{_options.VkActivityApiUri}/api/activity/{userId}/last-utc";
-        var lastSeen = await Request.GetAsync<DateTime>(getActivityUrl);
+        var url = $"{_options.VkActivityApiUri}/api/activity/{userId}/last-utc";
+        var lastSeen = await Request.Create(url).GetAsync<DateTime>();
         var inactiveTime = DateTime.UtcNow - lastSeen;
         return inactiveTime;
     }
@@ -71,7 +71,7 @@ internal sealed class UserWatcher : IHasJob, IHasCurrentState
             var inactiveTime = await GetInactiveTimeAsync(userId);
             var user = await GetUserAsync(userId);
             var userName = $"{user!.FirstName} {user.LastName}";
-            result.AppendLine($"User {userName} is not active for {inactiveTime:hh\\:mm\\:ss}");
+            result.AppendLine($@"User {userName} is not active for {inactiveTime:hh\:mm\:ss}");
         }
 
         return result.ToString().Trim();
