@@ -15,4 +15,7 @@ public sealed class SeqSettings2 // TODO: remove Zs.Common.Services.Logging.Seq.
 
     [Required]
     public int[] ObservedSignals { get; init; } = Array.Empty<int>();
+
+    [Required]
+    public int RequestedEventsCount { get; init; }
 }

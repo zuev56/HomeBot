@@ -64,9 +64,9 @@ public sealed class SeqEventsInformer : IHasCurrentState
             var localDate = seqEvent.Timestamp.AddHours(UtcToMsk).ToString("dd.MM.yyyy HH:mm:ss");
             var applicationName = seqEvent.Parameters["ApplicationName"].ToString();
 
-            messageBuilder.AppendLine(localDate)
-                .AppendLine($"App: {applicationName}")
-                .Append(seqEvent.Level.ToUpperInvariant()).Append(": ").Append(seqEvent.Message);
+            messageBuilder.Append(localDate).Append(' ').Append(seqEvent.Level.ToUpperInvariant()).AppendLine(": ")
+                .AppendLine(seqEvent.Message)
+                .Append($"App: {applicationName}");
 
             messageBuilder.AppendLine().AppendLine();
         }
@@ -76,12 +76,22 @@ public sealed class SeqEventsInformer : IHasCurrentState
 
     public async Task<string> GetCurrentStateAsync()
     {
-        var seqEvents = await _seqService.GetLastEventsAsync(300, _settings.ObservedSignals);
+        var seqEvents = await _seqService.GetLastEventsAsync(_settings.RequestedEventsCount, _settings.ObservedSignals);
+        var lastWeek = seqEvents.Count(e => e.Timestamp > DateTime.UtcNow.AddDays(-7));
         var last24Hours = seqEvents.Count(e => e.Timestamp > DateTime.UtcNow.AddDays(-1));
+        var last12Hours = seqEvents.Count(e => e.Timestamp > DateTime.UtcNow.AddHours(-12));
+        var last6Hours = seqEvents.Count(e => e.Timestamp > DateTime.UtcNow.AddHours(-6));
         var lastHour = seqEvents.Count(e => e.Timestamp > DateTime.UtcNow.AddHours(-1));
 
+        var signWeek = seqEvents.Count == lastWeek ? ">" : "";
         var sign24 = seqEvents.Count == last24Hours ? ">" : "";
+        var sign12 = seqEvents.Count == last12Hours ? ">" : "";
+        var sign6 = seqEvents.Count == last6Hours ? ">" : "";
         var sign1 = seqEvents.Count == lastHour ? ">" : "";
-        return $"{sign24}{last24Hours} events in 24 hours{Environment.NewLine}{sign1}{lastHour} events in last hour";
+        return $"{signWeek}{lastWeek} events in last week{Environment.NewLine}" +
+               $"{sign24}{last24Hours} events in 24 hours{Environment.NewLine}" +
+               $"{sign12}{last12Hours} events in 12 hours{Environment.NewLine}" +
+               $"{sign6}{last6Hours} events in 6 hours{Environment.NewLine}" +
+               $"{sign1}{lastHour} events in last hour";
     }
 }
