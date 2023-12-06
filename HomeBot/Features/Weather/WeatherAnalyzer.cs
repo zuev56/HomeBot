@@ -85,7 +85,7 @@ internal sealed class WeatherAnalyzer : IHasJob, IHasCurrentState
     private static string AnalyzeDeviations(EspMeteo espMeteo, DeviceSettings deviceSettings)
     {
         var espMeteoDeviceName = $"[{deviceSettings.Name ?? espMeteo.Uri}].";
-        var deviations = new StringBuilder(espMeteoDeviceName);
+        var deviations = new StringBuilder();
 
         foreach (var sensor in espMeteo.Sensors)
         {
