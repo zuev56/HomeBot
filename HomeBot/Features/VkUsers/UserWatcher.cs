@@ -34,7 +34,7 @@ internal sealed class UserWatcher : IHasJob, IHasCurrentState
         foreach (var userId in _options.TrackedIds)
         {
             var inactiveTime = await GetInactiveTimeAsync(userId);
-            if (inactiveTime < TimeSpan.FromHours(_options.InactiveHoursLimit)) //TODO: добавить в Zs.Common double.Hours())
+            if (inactiveTime < _options.InactiveHoursLimit.Hours())
                 continue;
 
             var user = await GetUserAsync(userId);

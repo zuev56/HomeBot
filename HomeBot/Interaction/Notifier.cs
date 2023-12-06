@@ -11,7 +11,6 @@ namespace HomeBot.Interaction;
 
 internal sealed class Notifier
 {
-    private const int SecondsPerDay = 86400;
     private readonly IBotClient _botClient;
     private readonly IChatsRepository _chatsRepository;
     private readonly IMessagesRepository _messagesRepository;
@@ -62,12 +61,10 @@ internal sealed class Notifier
     {
         var preparedMessage = GetPreparedMessage(message);
         var utcToday = DateTime.Today.ToUniversalTime();
-        var dateRange = new DateTimeRange(utcToday, utcToday.AddSeconds(SecondsPerDay-1));
-        foreach (int rawUserId in _botSettings.PrivilegedUserRawIds)
-        {
-            var todayAlerts = await _messagesRepository.FindWithTextAsync(rawUserId, templateForExclusion, dateRange);
-            if (todayAlerts.All(m => BotSettings.GetMessageText(m)?.WithoutDigits() != message.WithoutDigits()))
-                await NotifyAsync(preparedMessage);
-        }
+        var dateRange = new DateTimeRange(utcToday, DateTime.MaxValue);
+        // TODO: в FindWithTextAsync происходит неправильная конвертация времени - разница 6 часов. Надо поправить в Zs.Bot.Data
+        var todayAlerts = await _messagesRepository.FindWithTextAsync(_botSettings.OwnerChatRawId, templateForExclusion, dateRange);
+        if (todayAlerts.All(m => BotSettings.GetMessageText(m)?.WithoutDigits() != message.WithoutDigits()))
+            await NotifyAsync(preparedMessage);
     }
 }
