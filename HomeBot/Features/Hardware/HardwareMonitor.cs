@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
-using Zs.Common.Models;
 using Zs.Common.Services.Scheduling;
+using static System.Environment;
 
 namespace HomeBot.Features.Hardware;
 
@@ -22,9 +22,9 @@ public abstract class HardwareMonitor : IHasJob, IHasCurrentState
         Options = options.Value;
         Logger = logger;
         Job = new ProgramJob<string>(
-            period: TimeSpan.FromMinutes(5),
+            period: 5.Minutes(),
             method: GetHardwareAnalyzeResultsAsync,
-            startUtcDate: DateTime.UtcNow + TimeSpan.FromSeconds(5),
+            startUtcDate: DateTime.UtcNow + 5.Seconds(),
             description: Constants.HardwareWarningsInformer);
     }
 
@@ -40,62 +40,50 @@ public abstract class HardwareMonitor : IHasJob, IHasCurrentState
 
         await Task.WhenAll(analyzeCpuTemperature, analyzeCpuUsage, analyzeMemoryUsage);
 
-        var cpuTemperatureInfo = analyzeCpuTemperature.Result.Successful
-            ? analyzeCpuTemperature.Result.Value
-            : analyzeCpuTemperature.Result.Fault!.Message;
-        var cpuUsageInfo = analyzeCpuUsage.Result.Successful
-            ? analyzeCpuUsage.Result.Value
-            : analyzeCpuUsage.Result.Fault!.Message;
-        var memoryUsageInfo = analyzeMemoryUsage.Result.Successful
-            ? analyzeMemoryUsage.Result.Value
-            : analyzeMemoryUsage.Result.Fault!.Message;
+        var analyzeResult = analyzeCpuTemperature.Result + NewLine
+                            + analyzeCpuUsage.Result + NewLine
+                            + analyzeMemoryUsage.Result;
 
-        var analyzeResult = cpuTemperatureInfo + Environment.NewLine
-                            + cpuUsageInfo + Environment.NewLine
-                            + memoryUsageInfo;
-
-        return analyzeResult;
+        return analyzeResult.Trim();
     }
 
-    private async Task<Result<string>> AnalyzeCpuTemperature()
+    private async Task<string> AnalyzeCpuTemperature()
     {
         try
         {
             var cpuTemperature = await GetCpuTemperature();
-
             Logger.LogDebug("CPU temperature: {CPUTemperature}°C", cpuTemperature.ToString("0.##"));
 
             return cpuTemperature >= Options.WarnCpuTemperature
-                ? Result.Success($"CPU temperature: {cpuTemperature}°C")
-                : Result.Success(string.Empty);
+                ? $"CPU temperature: {cpuTemperature}°C"
+                : string.Empty;
         }
         catch (Exception ex)
         {
             Logger.LogErrorIfNeed(ex, "Unable to get temperature sensors info: {ExceptionType}\n{Message}\n{StackTrace}", ex.GetType(), ex.Message, ex.StackTrace);
-            return Result.Fail<string>(Fault.Unknown.WithMessage($"Unable to get temperature sensors info: {ex.Message}"));
+            return string.Empty;
         }
     }
 
-    private async Task<Result<string>> AnalyzeMemoryUsage()
+    private async Task<string> AnalyzeMemoryUsage()
     {
         try
         {
             var memoryUsagePercent = await GetMemoryUsagePercent();
-
             Logger.LogDebug("Memory usage: {MemoryUsage}%", Math.Round(memoryUsagePercent, 0));
 
             return memoryUsagePercent > Options.WarnMemoryUsage
-                ? Result.Success($"Memory usage: {memoryUsagePercent:F0}%")
-                : Result.Success(string.Empty);
+                ? $"Memory usage: {memoryUsagePercent:F0}%"
+                : string.Empty;
         }
         catch (Exception ex)
         {
             Logger.LogErrorIfNeed(ex, "Unable to get memory usage: {ExceptionType}\n{Message}\n{StackTrace}", ex.GetType(), ex.Message, ex.StackTrace);
-            return Result.Fail<string>(Fault.Unknown.WithMessage($"Unable to get memory usage: {ex.Message}"));
+            return string.Empty;
         }
     }
 
-    private async Task<Result<string>> AnalyzeCpuUsage()
+    private async Task<string> AnalyzeCpuUsage()
     {
         try
         {
@@ -104,15 +92,26 @@ public abstract class HardwareMonitor : IHasJob, IHasCurrentState
             Logger.LogDebug("CPU usage: {CpuUsage}", cpuUsage);
 
             return cpuUsage > Options.WarnCpuUsage
-                ? Result.Success($"15 min avg CPU usage: {cpuUsage}")
-                : Result.Success(string.Empty);
+                ? $"15 min avg CPU usage: {cpuUsage}"
+                : string.Empty;
         }
         catch (Exception ex)
         {
             Logger.LogErrorIfNeed(ex, "Unable to get CPU usage: {ExceptionType}\n{Message}\n{StackTrace}", ex.GetType(), ex.Message, ex.StackTrace);
-            return Result.Fail<string>(Fault.Unknown.WithMessage($"Unable to get CPU usage: {ex.Message}"));
+            return string.Empty;
         }
     }
 
-    public async Task<string> GetCurrentStateAsync() => await GetHardwareAnalyzeResultsAsync();
+    public async Task<string> GetCurrentStateAsync()
+    {
+        var analyzeCpuTemperature = GetCpuTemperature();
+        var analyzeCpuUsage = Get15MinAvgCpuUsage();
+        var analyzeMemoryUsage = GetMemoryUsagePercent();
+
+        await Task.WhenAll(analyzeCpuTemperature, analyzeCpuUsage, analyzeMemoryUsage);
+
+        return $"CPU temperature: {analyzeCpuTemperature.Result}°C{NewLine}" +
+               $"15 min avg CPU usage: {analyzeCpuUsage.Result}{NewLine}" +
+               $"Memory usage: {analyzeMemoryUsage.Result:F0}%";
+    }
 }
