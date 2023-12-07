@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Zs.Common.Extensions;
 using Zs.Common.Services.Logging.Seq;
 using Zs.Common.Services.Scheduling;
+using static System.Environment;
 
 namespace HomeBot.Features.Seq;
 
@@ -47,7 +48,7 @@ public sealed class SeqEventsInformer : IHasCurrentState
 
     private async Task<string> GetSeqEventsAsync(DateTime fromDate)
     {
-        var seqEvents = await _seqService.GetLastEventsAsync(100, _settings.ObservedSignals)
+        var seqEvents = await _seqService.GetLastEventsAsync(_settings.RequestedEventsCount, _settings.ObservedSignals)
             .ContinueWith(task => task.Result.Where(seqEvent => seqEvent.Timestamp > fromDate).ToList());
 
         return seqEvents.Count > 0
@@ -65,10 +66,13 @@ public sealed class SeqEventsInformer : IHasCurrentState
             var applicationName = seqEvent.Parameters["ApplicationName"].ToString();
 
             messageBuilder.Append(localDate).Append(' ').Append(seqEvent.Level.ToUpperInvariant()).AppendLine(": ")
-                .AppendLine(seqEvent.Message)
-                .Append($"App: {applicationName}");
+                .AppendLine(seqEvent.Message);
 
-            messageBuilder.AppendLine().AppendLine();
+            if (!string.IsNullOrWhiteSpace(seqEvent.Exception))
+                messageBuilder.Append("Exception: ").AppendLine(seqEvent.Exception[..seqEvent.Exception.IndexOf(NewLine, StringComparison.Ordinal)]);
+
+            messageBuilder.Append($"App: {applicationName}")
+                .AppendLine().AppendLine();
         }
 
         return messageBuilder.ToString().ReplaceEndingWithThreeDots(maxStringLength: 4000);
@@ -88,10 +92,10 @@ public sealed class SeqEventsInformer : IHasCurrentState
         var sign12 = seqEvents.Count == last12Hours ? ">" : "";
         var sign6 = seqEvents.Count == last6Hours ? ">" : "";
         var sign1 = seqEvents.Count == lastHour ? ">" : "";
-        return $"{signWeek}{lastWeek} events in last week{Environment.NewLine}" +
-               $"{sign24}{last24Hours} events in 24 hours{Environment.NewLine}" +
-               $"{sign12}{last12Hours} events in 12 hours{Environment.NewLine}" +
-               $"{sign6}{last6Hours} events in 6 hours{Environment.NewLine}" +
+        return $"{signWeek}{lastWeek} events in last week{NewLine}" +
+               $"{sign24}{last24Hours} events in 24 hours{NewLine}" +
+               $"{sign12}{last12Hours} events in 12 hours{NewLine}" +
+               $"{sign6}{last6Hours} events in 6 hours{NewLine}" +
                $"{sign1}{lastHour} events in last hour";
     }
 }
